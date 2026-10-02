@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark light" />
+    <script>
+      // Apply the saved theme before first paint to avoid a flash.
+      // Must match SETTINGS_STORAGE_KEY in src/hooks/useSettings.ts.
+      // Anything other than an explicit "light" or "dark" (including no saved value) follows the OS.
+      (function () {
+        var theme;
+        try {
+          var saved = JSON.parse(
+            localStorage.getItem("code-snippet-analyzer:settings") || "{}",
+          ).theme;
+          if (saved === "light" || saved === "dark") theme = saved;
+        } catch (e) {
+          /* storage blocked or invalid JSON: follow the OS */
+        }
+        if (!theme) theme = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+        document.documentElement.dataset.theme = theme;
+      })();
+    </script>
+    <title>Code Snippet Analyzer · AI code review</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

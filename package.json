@@ -1,0 +1,43 @@
+{
+  "name": "code-snippet-analyzer",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "frontend"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "concurrently -n web,api -c cyan,magenta \"npm:dev:frontend\" \"npm:dev:backend\"",
+    "dev:frontend": "npm run dev -w frontend",
+    "dev:backend": "cd backend && python -m alembic upgrade head && python -m uvicorn app.main:app --reload --port 8000 --no-access-log",
+    "build": "npm run build -w frontend",
+    "typecheck": "npm run typecheck -w frontend && npm run typecheck:backend",
+    "typecheck:backend": "cd backend && python -m mypy app",
+    "test": "npm test -w frontend && npm run test:backend",
+    "test:backend": "cd backend && python -m pytest -q",
+    "lint": "eslint . && npm run lint:backend",
+    "lint:fix": "eslint . --fix && cd backend && python -m ruff check . --fix",
+    "lint:backend": "cd backend && python -m ruff check .",
+    "format": "prettier --write . && cd backend && python -m ruff format .",
+    "format:check": "prettier --check . && cd backend && python -m ruff format --check ."
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.5",
+    "@types/node": "^22.20.4",
+    "concurrently": "^10.0.5",
+    "eslint": "^9.39.5",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-jsx-a11y": "^6.10.2",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^17.12.0",
+    "prettier": "^3.9.9",
+    "prettier-plugin-tailwindcss": "^0.8.1",
+    "typescript": "~5.9",
+    "typescript-eslint": "^8.71.0"
+  },
+  "dependencies": {
+    "git": "^0.1.5"
+  }
+}

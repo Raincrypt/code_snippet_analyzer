@@ -1,0 +1,146 @@
+@import "tailwindcss";
+@import "@fontsource-variable/instrument-sans";
+@import "@fontsource-variable/jetbrains-mono";
+
+/* Design tokens. Change a value here and the whole app follows. */
+@theme {
+  --font-sans: "Instrument Sans Variable", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono Variable", ui-monospace, monospace;
+
+  /* Surfaces: ink-blue darks, stepped by elevation */
+  --color-ink-950: #10131a;
+  --color-ink-900: #161a23;
+  --color-ink-800: #1e2330;
+  --color-ink-700: #2b3242;
+  --color-ink-600: #3a4257;
+
+  /* Text */
+  --color-fg: #e2e5ee;
+  --color-fg-muted: #939bb0;
+
+  /* Primary action: chalk, like a pencil on a dark page */
+  --color-chalk: #ebe6d6;
+  --color-chalk-ink: #1b1a15;
+  --color-chalk-hover: #ffffff;
+
+  /* Severity: each is also the color of its annotation rail */
+  --color-sev-error: #ff6f6f;
+  --color-sev-warning: #f4b63f;
+  --color-sev-info: #6fa8ff;
+  --color-sev-suggestion: #b99cff;
+
+  --color-good: #56cfa2;
+
+  --animate-note-in: note-in 0.4s ease-out both;
+  @keyframes note-in {
+    from {
+      opacity: 0;
+      transform: translateX(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+}
+
+/* Color tokens are overridden below for the light theme. */
+/* Code colors, used by the editor's syntax highlighting (features/review/editor/theme.ts). */
+:root {
+  color-scheme: dark;
+
+  --syn-keyword: #c9a7ff;
+  --syn-string: #8fd9a8;
+  --syn-number: #f5b072;
+  --syn-comment: #7b849b;
+  --syn-function: #7db5ff;
+  --syn-type: #f0cd7a;
+  --syn-property: #8fd0e6;
+  --syn-operator: #a9b1c6;
+  --syn-meta: #e8a6c8;
+}
+
+/*
+ * Light theme: same token names, different values. Names like ink-950 describe elevation
+ * steps (950 = page, 900 = panels, 800 = raised, 700 = borders), not literal colors.
+ */
+:root[data-theme="light"] {
+  color-scheme: light;
+
+  --color-ink-950: #f4f3ee;
+  --color-ink-900: #ffffff;
+  --color-ink-800: #ebe9e1;
+  --color-ink-700: #d6d3c8;
+  --color-ink-600: #b9b5a6;
+
+  --color-fg: #1c2030;
+  --color-fg-muted: #5b6378;
+
+  --color-chalk: #1e2333;
+  --color-chalk-ink: #f7f6f2;
+  --color-chalk-hover: #0b0e18;
+
+  --color-sev-error: #c62828;
+  --color-sev-warning: #9a6200;
+  --color-sev-info: #1a56c4;
+  --color-sev-suggestion: #6a3fd0;
+  --color-good: #0f7a55;
+
+  --syn-keyword: #6d3fd6;
+  --syn-string: #1a7f4f;
+  --syn-number: #b45309;
+  --syn-comment: #6b7285;
+  --syn-function: #1d4fb8;
+  --syn-type: #8a5a00;
+  --syn-property: #0e6a85;
+  --syn-operator: #4a5268;
+  --syn-meta: #a03a73;
+}
+
+/*
+ * Smooth theme switch: useApplyTheme adds .theme-transition to <html> for ~350ms around a
+ * change, so colors fade instead of snapping. It is temporary so it never slows down
+ * normal interactions, and it is skipped for users who prefer reduced motion.
+ */
+html.theme-transition,
+html.theme-transition *,
+html.theme-transition *::before,
+html.theme-transition *::after {
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease,
+    border-color 0.3s ease,
+    fill 0.3s ease,
+    stroke 0.3s ease,
+    box-shadow 0.3s ease !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.theme-transition,
+  html.theme-transition *,
+  html.theme-transition *::before,
+  html.theme-transition *::after {
+    transition: none !important;
+  }
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+body {
+  background: var(--color-ink-950);
+  color: var(--color-fg);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-chalk);
+  outline-offset: 2px;
+}
+
+::selection {
+  background: color-mix(in oklab, var(--color-sev-info) 40%, transparent);
+}

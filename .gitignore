@@ -1,0 +1,19 @@
+node_modules
+dist
+coverage
+*.tsbuildinfo
+.env
+.env.*
+!.env.example
+*.local
+.DS_Store
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.db
