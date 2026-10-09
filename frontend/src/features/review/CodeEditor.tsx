@@ -174,11 +174,12 @@ export function CodeEditor({
   const lineCount = Math.max(code.split("\n").length, 1);
 
   return (
-    <section aria-label="Code editor" className="flex h-full min-h-0 flex-1 flex-col">
+    <section aria-label="Code editor" className="flex min-h-0 flex-1 flex-col">
       <div className="flex items-center gap-3 border-b border-ink-700 px-4 py-2.5">
         <Select label="Language" value={language} options={LANGUAGES} onChange={onLanguageChange} />
         <span className="ml-auto font-mono text-xs text-fg-muted tabular-nums" aria-live="off">
-          {lineCount} {lineCount === 1 ? "line" : "lines"} · {code.length.toLocaleString()} chars
+          {lineCount} {lineCount === 1 ? "line" : "lines"}
+          <span className="hidden sm:inline"> · {code.length.toLocaleString()} chars</span>
         </span>
         <Button
           icon={<Play className="size-4" aria-hidden />}

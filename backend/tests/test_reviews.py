@@ -14,7 +14,11 @@ async def test_create_review_returns_a_saved_review(client: AsyncClient) -> None
     assert body["reviewer"] == "stub"
     assert body["messages"] == []
     assert body["createdAt"].endswith("Z") or "+00:00" in body["createdAt"]
-    assert 1 <= body["result"]["score"] <= 10
+    # The stub does not analyse arbitrary code, and says so instead of inventing findings.
+    assert body["result"]["verdict"] == "not-assessed"
+    assert body["result"]["score"] is None
+    assert body["result"]["issues"] == []
+    assert body["result"]["metrics"]["totalLines"] == 2
 
 
 async def test_review_json_is_camel_case_like_the_frontend(review: dict[str, object]) -> None:
@@ -61,36 +65,12 @@ async def test_malformed_review_id_is_a_validation_error(client: AsyncClient) ->
     assert response.status_code == 422
 
 
-async def test_list_is_newest_first_with_totals(client: AsyncClient) -> None:
-    for code in ("first", "second", "third"):
-        await client.post("/api/reviews", json={"code": code, "language": "go"})
+async def test_the_built_in_sample_gets_the_example_review(client: AsyncClient) -> None:
+    from app.services.demo import DEMO_DIR
 
-    page = (await client.get("/api/reviews", params={"limit": 2})).json()
-    assert page["total"] == 3
-    assert page["limit"] == 2
-    assert [item["preview"] for item in page["items"]] == ["third", "second"]
-
-    rest = (await client.get("/api/reviews", params={"limit": 2, "offset": 2})).json()
-    assert [item["preview"] for item in rest["items"]] == ["first"]
-
-
-async def test_list_items_summarise_the_result(
-    client: AsyncClient, review: dict[str, object]
-) -> None:
-    item = (await client.get("/api/reviews")).json()["items"][0]
-    assert item["id"] == review["id"]
-    assert item["language"] == "python"
-    assert item["issueCount"] == len(review["result"]["issues"])  # type: ignore[index,arg-type]
-    assert "code" not in item
-
-
-async def test_list_validates_paging_parameters(client: AsyncClient) -> None:
-    assert (await client.get("/api/reviews", params={"limit": 0})).status_code == 422
-    assert (await client.get("/api/reviews", params={"limit": 101})).status_code == 422
-    assert (await client.get("/api/reviews", params={"offset": -1})).status_code == 422
-
-
-async def test_delete_removes_the_review(client: AsyncClient, review: dict[str, object]) -> None:
-    assert (await client.delete(f"/api/reviews/{review['id']}")).status_code == 204
-    assert (await client.get(f"/api/reviews/{review['id']}")).status_code == 404
-    assert (await client.delete(f"/api/reviews/{review['id']}")).status_code == 404
+    sample = (DEMO_DIR / "sample-code.txt").read_text(encoding="utf-8")
+    response = await client.post("/api/reviews", json={"code": sample, "language": "javascript"})
+    result = response.json()["result"]
+    assert result["verdict"] == "needs-work"
+    assert result["complexity"]["time"] == "O(n²)"
+    assert [a["name"] for a in result["algorithms"]][0] == "Bubble sort"

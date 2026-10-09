@@ -1,5 +1,5 @@
-import { MOCK_REPLIES, MOCK_REVIEW } from "@/mocks/review";
-import { ReviewResultSchema } from "@/types/review";
+import { CLEAN_REVIEW, MOCK_REPLIES, MOCK_REVIEW } from "@/mocks/review";
+import { REVIEW_STAGES } from "@/types/review";
 import { ApiError, type ReviewApi } from "./types";
 
 export type MockOutcome = "issues" | "clean" | "error";
@@ -21,29 +21,24 @@ function delay(ms: number, signal?: AbortSignal): Promise<void> {
   });
 }
 
-export function createMockApi({ outcome, latencyMs = 1200 }: MockOptions): ReviewApi {
+export function createMockApi({ outcome, latencyMs = 1500 }: MockOptions): ReviewApi {
   return {
-    async review(_request, signal) {
-      await delay(latencyMs, signal);
-      if (outcome === "error") {
-        throw new ApiError(
-          "The reviewer took too long to respond. Your code is unchanged. Try again.",
-        );
+    async review(_request, signal, onProgress) {
+      // The real backend will report these steps as it completes them.
+      const stepMs = latencyMs / REVIEW_STAGES.length;
+      for (const stage of REVIEW_STAGES) {
+        onProgress?.(stage);
+        await delay(stepMs, signal);
+        if (outcome === "error" && stage === "analyse") {
+          throw new ApiError(
+            "The reviewer took too long to respond. Your code is unchanged. Try again.",
+          );
+        }
       }
-      // Validate like a real response would be validated.
-      return ReviewResultSchema.parse(
-        outcome === "clean"
-          ? {
-              summary: "Nothing to flag. The code is clear and handles its edge cases.",
-              score: 9,
-              issues: [],
-              positives: [],
-            }
-          : MOCK_REVIEW,
-      );
+      return outcome === "clean" ? CLEAN_REVIEW : MOCK_REVIEW;
     },
     async ask({ replyStyle }, signal) {
-      await delay(latencyMs * 0.8, signal);
+      await delay(latencyMs * 0.6, signal);
       return MOCK_REPLIES[replyStyle];
     },
   };

@@ -1,0 +1,258 @@
+{
+  "purpose": "Defines two small helpers: topScores returns the n largest numbers from a list using a hand-written sort, and hasDuplicates reports whether any value appears more than once.",
+  "summary": "Both functions return correct answers for ordinary input, but each does more work than necessary. topScores sorts with bubble sort and also reorders the caller's array as a side effect, which is the most important problem here. hasDuplicates compares every pair of items, so doubling the input roughly quadruples the time. Both are quick fixes with built-in tools.",
+  "verdict": "needs-work",
+  "score": 6,
+  "scoreBreakdown": {
+    "correctness": {
+      "score": 5,
+      "reason": "topScores silently reorders the caller's array, and its inner loop bound is one too large. Results are right for numbers."
+    },
+    "security": {
+      "score": 9,
+      "reason": "Nothing here handles untrusted data, files, or the network."
+    },
+    "performance": {
+      "score": 4,
+      "reason": "Both helpers do quadratic work where n log n or linear time is possible."
+    },
+    "readability": {
+      "score": 7,
+      "reason": "Short, clearly named functions. Only var and the one-letter loop names get in the way."
+    }
+  },
+  "priorityFixes": ["f1", "f3", "f4"],
+  "issues": [
+    {
+      "id": "f1",
+      "line": 3,
+      "severity": "error",
+      "category": "bug",
+      "title": "topScores reorders the caller's array",
+      "explanation": "`var sorted = scores;` copies the reference, not the array. Every swap in the loops below therefore changes the array the caller passed in.",
+      "impact": "Code that still needs the original order, such as a chart listing scores by date, now sees them sorted. The bug is silent and depends on who calls the function.",
+      "evidence": "var sorted = scores;",
+      "confidence": "high",
+      "effort": "quick",
+      "fix": {
+        "description": "Sort a copy so the input is never modified.",
+        "before": "var sorted = scores;",
+        "after": "const sorted = [...scores];"
+      },
+      "references": []
+    },
+    {
+      "id": "f2",
+      "line": 5,
+      "severity": "warning",
+      "category": "bug",
+      "title": "Inner loop reads one element past the end",
+      "explanation": "The inner loop runs while `j < sorted.length - i`, so `sorted[j + 1]` is read at index `length` on the first pass, which is `undefined`. The standard bound is `sorted.length - i - 1`.",
+      "impact": "Comparing a number with `undefined` is always false, so numbers still sort correctly. If the comparison ever changes, or the list holds strings or objects, this off-by-one can produce wrong results or errors.",
+      "evidence": "for (var j = 0; j < sorted.length - i; j++) {",
+      "confidence": "high",
+      "effort": "quick",
+      "fix": {
+        "description": "Stop one element earlier so j + 1 is always a valid index.",
+        "before": "for (var j = 0; j < sorted.length - i; j++) {",
+        "after": "for (let j = 0; j < sorted.length - i - 1; j++) {"
+      },
+      "references": []
+    },
+    {
+      "id": "f3",
+      "line": 4,
+      "endLine": 12,
+      "severity": "warning",
+      "category": "performance",
+      "title": "Bubble sort does quadratic work",
+      "explanation": "Two nested loops compare neighbouring items, so the work grows with the square of the list length. There is no early exit when a pass makes no swaps, so even an already sorted list takes the full amount of work.",
+      "impact": "For 10,000 scores that is around 50 million comparisons. The built-in sort needs roughly 130 thousand comparisons for the same list. A leaderboard that is re-sorted on every request will feel slow well before it looks large.",
+      "evidence": "for (var i = 0; i < sorted.length; i++) {\n    for (var j = 0; j < sorted.length - i; j++) {",
+      "confidence": "high",
+      "effort": "quick",
+      "fix": {
+        "description": "Use the built-in sort on a copy. It also fixes the input-mutation problem. If you only ever need a small top n from a large list, a partial selection (a heap of size n) is faster still.",
+        "before": "var sorted = scores;\nfor (var i = 0; i < sorted.length; i++) {\n  ...\n}\nreturn sorted.slice(0, n);",
+        "after": "return [...scores].sort((a, b) => b - a).slice(0, n);"
+      },
+      "references": [
+        {
+          "label": "MDN: Array.prototype.sort",
+          "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/sort"
+        }
+      ]
+    },
+    {
+      "id": "f4",
+      "line": 17,
+      "endLine": 21,
+      "severity": "warning",
+      "category": "performance",
+      "title": "Duplicate check compares every pair",
+      "explanation": "For each item the inner loop scans all later items. Without duplicates, that is about n × n / 2 comparisons.",
+      "impact": "A list of 100,000 items needs around 5 billion comparisons to prove there are no duplicates, which takes seconds. A set answers the same question in one pass.",
+      "evidence": "for (var i = 0; i < items.length; i++) {\n    for (var j = i + 1; j < items.length; j++) {",
+      "confidence": "high",
+      "effort": "quick",
+      "fix": {
+        "description": "Compare the size of a Set with the length of the list. One behaviour differs: a Set treats NaN as equal to NaN, while === does not, so a list with two NaN values counts as having duplicates.",
+        "before": "for (var i = 0; i < items.length; i++) {\n  for (var j = i + 1; j < items.length; j++) {\n    if (items[i] === items[j]) return true;\n  }\n}\nreturn false;",
+        "after": "return new Set(items).size !== items.length;"
+      },
+      "references": [
+        {
+          "label": "MDN: Set",
+          "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Set"
+        }
+      ]
+    },
+    {
+      "id": "f5",
+      "line": 4,
+      "severity": "suggestion",
+      "category": "style",
+      "title": "Prefer let and const over var",
+      "explanation": "`var` is scoped to the whole function and is hoisted, so `i`, `j` and `tmp` are visible outside the loops where they are used.",
+      "impact": "Mostly a readability and future-bug risk. Reusing `i` or `j` by accident outside their loop would compile without any warning.",
+      "evidence": "for (var i = 0; i < sorted.length; i++) {",
+      "confidence": "high",
+      "effort": "quick",
+      "fix": {
+        "description": "Declare loop counters with let and values that never change with const.",
+        "before": "for (var i = 0; i < sorted.length; i++) {",
+        "after": "for (let i = 0; i < sorted.length; i++) {"
+      },
+      "references": []
+    },
+    {
+      "id": "f6",
+      "line": 2,
+      "severity": "info",
+      "category": "best-practice",
+      "title": "Inputs are not validated",
+      "explanation": "Nothing checks that `scores` is an array or that `n` is a sensible count. A negative `n` makes `slice(0, n)` drop items from the end instead of returning none.",
+      "impact": "Bad input produces a confusing result rather than an error, which makes problems harder to trace back to the caller.",
+      "evidence": "function topScores(scores, n) {",
+      "confidence": "medium",
+      "effort": "quick",
+      "fix": {
+        "description": "Reject unusable input at the top of the function.",
+        "before": "function topScores(scores, n) {",
+        "after": "function topScores(scores, n) {\n  if (!Array.isArray(scores) || !Number.isInteger(n) || n < 0) {\n    throw new TypeError(\"topScores expects an array and a non-negative integer\");\n  }"
+      },
+      "references": []
+    }
+  ],
+  "positives": [
+    {
+      "line": 1,
+      "comment": "The comment states what the function returns and in what order."
+    },
+    {
+      "line": 19,
+      "comment": "hasDuplicates stops at the first match instead of scanning the whole list."
+    }
+  ],
+  "complexity": {
+    "time": "O(n²)",
+    "space": "O(1)",
+    "explanation": "Let n be the number of items passed in. In both functions an outer loop runs up to n times and an inner loop runs up to n times for each of those, which gives n × n steps. Neither function allocates anything that grows with n, so the extra memory is constant. topScores also calls slice, which copies at most the requested count, a cost that is small compared with the sort.",
+    "functions": [
+      {
+        "name": "topScores",
+        "startLine": 2,
+        "endLine": 14,
+        "bestCase": "O(n²)",
+        "averageCase": "O(n²)",
+        "worstCase": "O(n²)",
+        "space": "O(1)",
+        "explanation": "The loops always run to completion. There is no early exit, so even an already sorted list takes about n²/2 comparisons. It sorts the caller's array in place, so it adds no extra memory beyond the slice at the end."
+      },
+      {
+        "name": "hasDuplicates",
+        "startLine": 16,
+        "endLine": 23,
+        "bestCase": "O(1)",
+        "averageCase": "O(n²)",
+        "worstCase": "O(n²)",
+        "space": "O(1)",
+        "explanation": "If the first two items match, it returns immediately. When there are no duplicates, which is the common case, every pair is compared once, about n²/2 comparisons."
+      }
+    ]
+  },
+  "algorithms": [
+    {
+      "name": "Bubble sort",
+      "category": "Sorting",
+      "confidence": "high",
+      "startLine": 4,
+      "endLine": 12,
+      "evidence": "Neighbouring items are compared and swapped inside two nested loops, so the largest remaining value moves to the front on every pass. Here the sort is descending.",
+      "summary": "Repeatedly walks through the list swapping out-of-order neighbours until the list is ordered.",
+      "time": "O(n²)",
+      "space": "O(1)",
+      "assessment": "Simple and in place, but slow. It is only reasonable for a handful of items or teaching. This version also lacks the usual early-exit check that makes bubble sort fast on sorted input.",
+      "alternatives": [
+        {
+          "name": "Built-in sort (TimSort in modern engines)",
+          "time": "O(n log n)",
+          "space": "O(n)",
+          "tradeoff": "Much faster for large lists and thoroughly tested. Remember to pass a numeric comparator."
+        },
+        {
+          "name": "Heap-based top-k selection",
+          "time": "O(n log k)",
+          "space": "O(k)",
+          "tradeoff": "Best when k is much smaller than n, because the full list is never sorted. More code to write."
+        },
+        {
+          "name": "Quickselect then sort the top k",
+          "time": "O(n + k log k)",
+          "space": "O(1)",
+          "tradeoff": "Average-case linear. Worst case is quadratic unless the pivot is chosen carefully."
+        }
+      ]
+    },
+    {
+      "name": "Brute-force pairwise duplicate check",
+      "category": "Searching",
+      "confidence": "high",
+      "startLine": 17,
+      "endLine": 21,
+      "evidence": "Each item is compared with every later item using two nested loops, with an early return on the first equal pair.",
+      "summary": "Checks all pairs of items for equality.",
+      "time": "O(n²)",
+      "space": "O(1)",
+      "assessment": "Correct and uses no extra memory, which is its one advantage. For anything beyond a few hundred items, hashing is a better fit.",
+      "alternatives": [
+        {
+          "name": "Hash set",
+          "time": "O(n)",
+          "space": "O(n)",
+          "tradeoff": "One pass and the fastest in practice, at the cost of memory proportional to the number of distinct items."
+        },
+        {
+          "name": "Sort, then compare neighbours",
+          "time": "O(n log n)",
+          "space": "O(1)",
+          "tradeoff": "No hash table needed, but it reorders the data, so it needs a copy if the order matters."
+        }
+      ]
+    }
+  ],
+  "metrics": {
+    "totalLines": 23,
+    "codeLines": 21,
+    "commentLines": 1,
+    "blankLines": 1,
+    "longestLine": 49,
+    "functionCount": 2,
+    "longestFunctionLines": 13,
+    "maxNestingDepth": 3
+  },
+  "limitations": [
+    "This is a single snippet. Code that calls these functions was not visible, so the effect of the input being reordered on callers is assumed.",
+    "Complexity is worked out from the structure of the code. Real speed also depends on the runtime and the data."
+  ]
+}

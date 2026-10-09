@@ -2,27 +2,60 @@
 
 from fastapi import FastAPI
 from httpx import AsyncClient
+from sqlalchemy import func, select
 
-from app.schemas import CodeIssue, Language, ReviewResult
+from app.models import Review
+from app.schemas import (
+    AreaScore,
+    CodeIssue,
+    Language,
+    Metrics,
+    ReviewResult,
+    ScoreBreakdown,
+)
 from app.services.reviewer import AnswerOutcome, AnswerRequest, ReviewerError, ReviewOutcome
+
+
+def fake_result() -> ReviewResult:
+    return ReviewResult(
+        purpose="Adds two numbers.",
+        summary="Found one problem.",
+        verdict="needs-work",
+        score=3,
+        score_breakdown=ScoreBreakdown(
+            correctness=AreaScore(score=3, reason="Bad."),
+            security=AreaScore(score=9, reason="Fine."),
+            performance=AreaScore(score=8, reason="Fine."),
+            readability=AreaScore(score=7, reason="Fine."),
+        ),
+        priority_fixes=["f1"],
+        issues=[
+            CodeIssue(
+                id="f1",
+                line=2,
+                severity="error",
+                category="bug",
+                title="Bad",
+                explanation="Because.",
+                impact="It breaks.",
+                evidence="x",
+                confidence="high",
+                effort="quick",
+            )
+        ],
+        positives=[],
+        metrics=Metrics(
+            total_lines=1, code_lines=1, comment_lines=0, blank_lines=0, longest_line=1
+        ),
+    )
 
 
 class FakeModelReviewer:
     name = "fake-model"
 
     async def review(self, code: str, language: Language) -> ReviewOutcome:
-        result = ReviewResult(
-            summary="Found one problem.",
-            score=3,
-            issues=[
-                CodeIssue(
-                    line=2, severity="error", category="bug", title="Bad", description="Because."
-                )
-            ],
-            positives=[],
-        )
         return ReviewOutcome(
-            result=result, model="fake-1", prompt_version="v1", tokens_in=120, tokens_out=45
+            result=fake_result(), model="fake-1", prompt_version="v1", tokens_in=120, tokens_out=45
         )
 
     async def answer(self, request: AnswerRequest) -> AnswerOutcome:
@@ -67,4 +100,6 @@ async def test_reviewer_failure_becomes_a_502_and_saves_nothing(
     assert response.status_code == 502
     assert response.json()["error"]["code"] == "reviewer_failed"
     assert "timed out" not in response.text  # internal details are not leaked
-    assert (await client.get("/api/reviews")).json()["total"] == 0
+    async with app.state.session_factory() as session:
+        saved = await session.scalar(select(func.count()).select_from(Review))
+    assert saved == 0

@@ -1,0 +1,23 @@
+// Returns the n highest scores, best first.
+function topScores(scores, n) {
+  var sorted = scores;
+  for (var i = 0; i < sorted.length; i++) {
+    for (var j = 0; j < sorted.length - i; j++) {
+      if (sorted[j] < sorted[j + 1]) {
+        var tmp = sorted[j];
+        sorted[j] = sorted[j + 1];
+        sorted[j + 1] = tmp;
+      }
+    }
+  }
+  return sorted.slice(0, n);
+}
+
+function hasDuplicates(items) {
+  for (var i = 0; i < items.length; i++) {
+    for (var j = i + 1; j < items.length; j++) {
+      if (items[i] === items[j]) return true;
+    }
+  }
+  return false;
+}

@@ -1,10 +1,11 @@
 import { useMemo, useRef, useState, type CSSProperties } from "react";
 import { createMockApi, type MockOutcome } from "@/api/mockApi";
+import type { ReviewApi } from "@/api/types";
 import { Header } from "@/components/Header";
 import { ResizeHandle } from "@/components/ResizeHandle";
 import { StatusBar } from "@/components/StatusBar";
 import { ChatPanel } from "@/features/chat/ChatPanel";
-import { CodeEditor, type CodeEditorHandle } from "@/features/review/CodeEditor";
+import { CodeEditor, type CodeEditorHandle, type EditorIssue } from "@/features/review/CodeEditor";
 import { ResultsSection } from "@/features/review/ResultsSection";
 import { useChat } from "@/hooks/useChat";
 import { usePersistentNumber } from "@/hooks/usePersistentNumber";
@@ -13,6 +14,7 @@ import { useSettings } from "@/hooks/useSettings";
 import { useApplyTheme } from "@/hooks/useTheme";
 import { SAMPLE_CODE } from "@/mocks/review";
 import type { CodeIssue } from "@/types/review";
+import { chatBlockedReason } from "@/utils/chatAvailability";
 import { findIssueAtLine, issueKey } from "@/utils/issues";
 import { formatLineRange } from "@/utils/severity";
 
@@ -22,8 +24,14 @@ const MIN_LEFT_WIDTH = 360;
 const MIN_RESULTS_HEIGHT = 160;
 const MIN_EDITOR_HEIGHT = 200;
 const HANDLE_SIZE = 6;
+const NO_ISSUES: EditorIssue[] = [];
 
-export default function App() {
+type AppProps = {
+  /** Lets tests supply a controllable API. In the app it defaults to the mock. */
+  api?: ReviewApi;
+};
+
+export default function App({ api: injectedApi }: AppProps = {}) {
   const [code, setCode] = useState(SAMPLE_CODE);
   const [language, setLanguage] = useState("javascript");
   const [outcome, setOutcome] = useState<MockOutcome>("issues");
@@ -35,7 +43,7 @@ export default function App() {
   const [chatWidth, setChatWidth] = usePersistentNumber("code-snippet-analyzer:chat-width", 400);
   const [resultsHeight, setResultsHeight] = usePersistentNumber(
     "code-snippet-analyzer:results-height",
-    320,
+    440,
   );
 
   const mainRef = useRef<HTMLElement>(null);
@@ -46,20 +54,28 @@ export default function App() {
   const [activeKey, setActiveKey] = useState<string | null>(null);
 
   // Swap createMockApi for an HTTP client once the backend exists; nothing else changes.
-  const api = useMemo(() => createMockApi({ outcome }), [outcome]);
+  const mockApi = useMemo(() => createMockApi({ outcome }), [outcome]);
+  const api = injectedApi ?? mockApi;
   const review = useReview(api);
   const chat = useChat(api, settings.replyStyle);
 
   function runReview() {
-    if (!code.trim()) return;
+    // Also guards the Ctrl/Cmd+Enter shortcut and "Try again", not just the disabled button.
+    if (!code.trim() || review.state.status === "loading") return;
     setActiveKey(null);
     void review.run({ code, language });
   }
 
+  // Chat works only while the editor holds exactly the code that was reviewed.
+  const sendBlockedReason = chatBlockedReason(review.state.status, review.reviewedCode, code);
+
+  // The code was edited after the review, so line numbers and findings may no longer match.
+  const stale = review.state.status === "success" && review.reviewedCode !== code;
+
   // Card -> editor: select and scroll to the finding's lines.
   function locateIssue(issue: CodeIssue) {
     setActiveKey(issueKey(issue));
-    editorRef.current?.revealLines(issue.line, issue.endLine);
+    editorRef.current?.revealLines(issue.line, issue.endLine ?? undefined);
   }
 
   // Editor gutter -> card: open the results panel and highlight the matching card.
@@ -72,7 +88,7 @@ export default function App() {
   }
 
   function askAbout(issue: CodeIssue) {
-    const where = formatLineRange(issue.line, issue.endLine).toLowerCase();
+    const where = formatLineRange(issue.line, issue.endLine ?? undefined).toLowerCase();
     chat.setDraft(`About ${where} (${issue.title}): `);
     chatInputRef.current?.focus();
   }
@@ -91,12 +107,14 @@ export default function App() {
       review.state.status === "success"
         ? review.state.result.issues.map(({ line, endLine, severity }) => ({
             line,
-            endLine,
+            endLine: endLine ?? undefined,
             severity,
           }))
         : [],
     [review.state],
   );
+  // Markers refer to the reviewed code, so hide them once the code has been edited.
+  const visibleIssues = stale ? NO_ISSUES : editorIssues;
 
   return (
     <div className="flex h-dvh flex-col">
@@ -104,9 +122,11 @@ export default function App() {
       <main
         ref={mainRef}
         style={{ "--chat-w": `${chatWidth}px` } as CSSProperties}
-        className="grid min-h-0 flex-1 overflow-y-auto lg:grid-cols-[minmax(0,1fr)_auto_min(var(--chat-w),60vw)] lg:overflow-hidden"
+        // On small screens the panels stack at their natural height and the page scrolls;
+        // from lg up they sit side by side and fill the window.
+        className="flex min-h-0 flex-1 flex-col overflow-y-auto lg:grid lg:grid-cols-[minmax(0,1fr)_auto_min(var(--chat-w),60vw)] lg:overflow-hidden"
       >
-        <div ref={leftRef} className="flex min-h-0 min-w-0 flex-col">
+        <div ref={leftRef} className="flex min-h-0 min-w-0 shrink-0 flex-col lg:shrink">
           <div className="flex min-h-[340px] flex-1 flex-col lg:min-h-[200px]">
             <CodeEditor
               ref={editorRef}
@@ -116,7 +136,7 @@ export default function App() {
               onLanguageChange={setLanguage}
               onReview={runReview}
               loading={review.state.status === "loading"}
-              issues={editorIssues}
+              issues={visibleIssues}
               fontSize={settings.editorFontSize}
               onIssueClick={handleGutterClick}
             />
@@ -137,8 +157,10 @@ export default function App() {
             open={resultsOpen}
             onToggle={() => setResultsOpen((open) => !open)}
             height={resultsHeight}
+            stale={stale}
             onAsk={askAbout}
             onLocate={locateIssue}
+            onLocateLines={(start, end) => editorRef.current?.revealLines(start, end)}
             activeKey={activeKey}
             onRetry={runReview}
           />
@@ -154,15 +176,18 @@ export default function App() {
           className="hidden lg:flex"
         />
 
-        <div className="flex min-h-[420px] min-w-0 flex-col border-t border-ink-700 lg:min-h-0 lg:border-t-0">
+        <div className="flex min-h-[420px] min-w-0 shrink-0 flex-col border-t border-ink-700 lg:min-h-0 lg:shrink lg:border-t-0">
           <ChatPanel
             messages={chat.messages}
             thinking={chat.thinking}
             error={chat.error}
             draft={chat.draft}
             onDraftChange={chat.setDraft}
-            onSend={() => void chat.send()}
+            onSend={() => {
+              if (!sendBlockedReason) void chat.send();
+            }}
             onClear={chat.clear}
+            sendBlockedReason={sendBlockedReason}
             inputRef={chatInputRef}
           />
         </div>

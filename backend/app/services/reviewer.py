@@ -1,7 +1,7 @@
 """The seam where an AI model plugs in.
 
 The API only talks to the `Reviewer` protocol below. Today the only implementation is
-`StubReviewer`, which returns a clearly-labelled placeholder so the whole app works end to end.
+`StubReviewer`, a placeholder so the whole app works end to end.
 
 To add a real model later:
   1. Write a class (e.g. `LLMReviewer`) with the same two async methods and a `name`.
@@ -14,7 +14,9 @@ from dataclasses import dataclass
 from typing import Protocol
 
 from app.config import Settings
-from app.schemas import CodeIssue, Language, ReplyStyle, ReviewResult, Role
+from app.schemas import Language, ReplyStyle, ReviewResult, Role
+from app.services.demo import demo_review_for
+from app.services.metrics import measure
 
 
 class ReviewerError(Exception):
@@ -66,33 +68,35 @@ class Reviewer(Protocol):
 
 
 class StubReviewer:
-    """Placeholder used until an AI model is connected. It never inspects the code."""
+    """Placeholder used until an AI model is connected.
+
+    It does not analyse code. For the built-in sample it returns a canned example review so the
+    interface can be demonstrated; for anything else it says plainly that nothing was analysed.
+    """
 
     name = "stub"
 
     async def review(self, code: str, language: Language) -> ReviewOutcome:
-        result = ReviewResult(
+        demo = demo_review_for(code)
+        if demo is not None:
+            return ReviewOutcome(result=demo)
+        return ReviewOutcome(result=self._not_assessed(code))
+
+    @staticmethod
+    def _not_assessed(code: str) -> ReviewResult:
+        return ReviewResult(
+            purpose="Not analysed.",
             summary=(
-                "This is a placeholder review. No AI reviewer is connected yet, "
-                "so your code was not analysed."
+                "This is a placeholder. No AI reviewer is connected yet, so your code was not "
+                "analysed. The measurements shown are taken directly from your code."
             ),
-            score=5,
-            issues=[
-                CodeIssue(
-                    line=1,
-                    severity="info",
-                    category="best-practice",
-                    title="No AI reviewer connected",
-                    description=(
-                        f"The backend received your {language} code "
-                        f"({len(code.splitlines())} lines) and stored it, but a real review "
-                        "needs an AI model. Connect one by adding a Reviewer implementation."
-                    ),
-                )
-            ],
+            verdict="not-assessed",
+            priority_fixes=[],
+            issues=[],
             positives=[],
+            metrics=measure(code),
+            limitations=["No AI reviewer is connected, so no findings, complexity or score."],
         )
-        return ReviewOutcome(result=result)
 
     async def answer(self, request: AnswerRequest) -> AnswerOutcome:
         return AnswerOutcome(

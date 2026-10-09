@@ -1,95 +1,65 @@
 import { ReviewResultSchema, type ReviewResult } from "@/types/review";
 import type { ReplyStyle } from "@/types/settings";
+// The sample code and its review live in /shared/demo so the backend's stub uses the very same
+// files. Both sides validate them against their own schema, so the contract cannot drift.
+import sampleCode from "../../../shared/demo/sample-code.txt?raw";
+import demoReview from "../../../shared/demo/review.json";
 
-export const SAMPLE_CODE = `async function getUser(req, res) {
-  const id = req.query.id;
-  const rows = await db.query("SELECT * FROM users WHERE id = " + id);
-  var user = rows[0];
-  if (user.role == "admin") {
-    console.log("admin login", user.password);
-  }
-  const posts = [];
-  for (let i = 0; i < user.postIds.length; i++) {
-    posts.push(await db.query("SELECT * FROM posts WHERE id = " + user.postIds[i]));
-  }
-  res.json({ user, posts });
-}`;
+export const SAMPLE_CODE = sampleCode.replace(/\r\n/g, "\n").replace(/\n+$/, "");
 
-// Parsing the mock through the schema means a typo here fails loudly,
+// Parsing through the schema means a mistake in the data fails loudly,
 // exactly like a malformed API response will later.
-export const MOCK_REVIEW: ReviewResult = ReviewResultSchema.parse({
+export const MOCK_REVIEW: ReviewResult = ReviewResultSchema.parse(demoReview);
+
+/** What the mock returns for the "finds nothing" preview. */
+export const CLEAN_REVIEW: ReviewResult = ReviewResultSchema.parse({
+  purpose: "Adds two numbers and returns the result.",
   summary:
-    "The handler works for the happy path, but it builds SQL from user input and assumes the user always exists. Fix the injection risk first; the rest is cleanup.",
-  score: 4,
-  issues: [
-    {
-      line: 3,
-      severity: "error",
-      category: "security",
-      title: "SQL injection through string concatenation",
-      description:
-        "The `id` query parameter goes straight into the SQL string, so a request like `?id=1 OR 1=1` returns every user.",
-      suggestion: 'const rows = await db.query("SELECT * FROM users WHERE id = $1", [id]);',
-    },
-    {
-      line: 5,
-      severity: "error",
-      category: "bug",
-      title: "Crash when the user does not exist",
-      description:
-        "`rows[0]` is undefined for an unknown id, so `user.role` throws a TypeError and the request fails with a 500.",
-      suggestion: 'if (!user) return res.status(404).json({ error: "User not found" });',
-    },
-    {
-      line: 6,
-      severity: "warning",
-      category: "security",
-      title: "Password written to the logs",
-      description:
-        "Logging `user.password` leaks credentials to anyone who can read your logs. Log the user id instead.",
-      suggestion: 'console.log("admin login", user.id);',
-    },
-    {
-      line: 9,
-      endLine: 11,
-      severity: "warning",
-      category: "performance",
-      title: "One query per post (N+1)",
-      description:
-        "The loop awaits a separate query for every post id, so latency grows with the number of posts.",
-      suggestion:
-        'const posts = await db.query("SELECT * FROM posts WHERE id = ANY($1)", [user.postIds]);',
-    },
-    {
-      line: 5,
-      severity: "info",
-      category: "best-practice",
-      title: "Use strict equality",
-      description: "`==` allows type coercion. Prefer `===` so comparisons behave predictably.",
-      suggestion: 'if (user.role === "admin") {',
-    },
-    {
-      line: 4,
-      severity: "suggestion",
-      category: "style",
-      title: "Prefer const over var",
-      description:
-        "`var` is function-scoped and hoisted. `const` states that the binding never changes.",
-      suggestion: "const user = rows[0];",
-    },
-  ],
-  positives: [{ line: 1, comment: "Async/await keeps the control flow easy to follow." }],
+    "Nothing to flag. The code is small, clear and handles its inputs correctly. The work is constant, regardless of the input.",
+  verdict: "looks-good",
+  score: 9,
+  scoreBreakdown: {
+    correctness: { score: 9, reason: "Does exactly what its name says." },
+    security: { score: 10, reason: "Nothing here touches untrusted data." },
+    performance: { score: 10, reason: "A single addition." },
+    readability: { score: 9, reason: "Clear names and no surprises." },
+  },
+  priorityFixes: [],
+  issues: [],
+  positives: [{ line: 1, comment: "A single, focused responsibility." }],
+  complexity: {
+    time: "O(1)",
+    space: "O(1)",
+    explanation: "One addition, no loops and no allocation, so both time and memory are constant.",
+    functions: [
+      {
+        name: "add",
+        startLine: 1,
+        endLine: 3,
+        bestCase: "O(1)",
+        averageCase: "O(1)",
+        worstCase: "O(1)",
+        space: "O(1)",
+        explanation: "A single operation regardless of the input.",
+      },
+    ],
+  },
+  algorithms: [],
+  metrics: { totalLines: 3, codeLines: 3, commentLines: 0, blankLines: 0, longestLine: 24 },
+  limitations: [],
 });
 
 export const MOCK_REPLIES: Record<ReplyStyle, string> = {
-  brief: "Use a parameterized query so the database never treats input as code.",
+  brief:
+    "Sort a copy instead: `[...scores].sort((a, b) => b - a).slice(0, n)`. It leaves the input alone and runs in O(n log n).",
   balanced:
-    "Good question. The safest fix is a parameterized query: pass the value separately from the SQL text so the database never treats it as code. I can show the same change for the posts query if that helps.",
+    "Good question. The loops swap items inside `scores` itself, because `var sorted = scores` only copies the reference. Sorting a copy, `[...scores].sort((a, b) => b - a)`, leaves the caller's array untouched and also replaces the quadratic bubble sort with an O(n log n) sort. I can show the same change for hasDuplicates if that helps.",
   detailed: [
     "Good question. Here is the reasoning, step by step.",
-    "1. The problem: the query is built by joining strings, so whatever the caller sends in `id` becomes part of the SQL itself. A value like `1 OR 1=1` changes the meaning of the query.",
-    '2. The fix: send the SQL and the value separately. The database parses the SQL first, then treats the value strictly as data: `db.query("SELECT * FROM users WHERE id = $1", [id])`.',
-    "3. Apply it everywhere: the posts query in the loop has the same flaw, and replacing the loop with one `= ANY($1)` query also removes the N+1 problem.",
-    "I can walk through the rewritten handler if you would like.",
+    "1. The problem: `var sorted = scores;` does not copy the array. Both names point at the same list, so every swap in the loops changes the caller's data too.",
+    "2. The fix: make a real copy first with `[...scores]`. Now the sort works on its own list and the input stays as it was.",
+    "3. While you are there, the hand-written loops can go. `.sort((a, b) => b - a)` orders numbers from highest to lowest in O(n log n) time instead of O(n²). The comparator matters: without it, JavaScript sorts numbers as text and puts 10 before 9.",
+    "4. Final version: `return [...scores].sort((a, b) => b - a).slice(0, n);`",
+    "I can walk through the same idea for hasDuplicates if you would like.",
   ].join("\n\n"),
 };

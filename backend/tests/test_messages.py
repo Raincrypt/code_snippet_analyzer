@@ -41,11 +41,11 @@ async def test_reply_style_reaches_the_reviewer(
     assert "detailed" in detailed["assistantMessage"]["content"]
 
 
-async def test_reply_style_defaults_to_balanced(
+async def test_reply_style_defaults_to_brief(
     client: AsyncClient, review: dict[str, object]
 ) -> None:
     response = await client.post(f"/api/reviews/{review['id']}/messages", json={"question": "Hi"})
-    assert response.json()["assistantMessage"]["replyStyle"] == "balanced"
+    assert response.json()["assistantMessage"]["replyStyle"] == "brief"
 
 
 async def test_asking_about_an_unknown_review_is_404(client: AsyncClient) -> None:
@@ -69,11 +69,3 @@ async def test_oversized_question_is_rejected(
 ) -> None:
     response = await ask(client, review["id"], "x" * (settings.max_question_chars + 1))
     assert response.status_code == 413
-
-
-async def test_deleting_a_review_deletes_its_messages(
-    client: AsyncClient, review: dict[str, object]
-) -> None:
-    await ask(client, review["id"])
-    assert (await client.delete(f"/api/reviews/{review['id']}")).status_code == 204
-    assert (await client.get("/api/reviews")).json()["total"] == 0

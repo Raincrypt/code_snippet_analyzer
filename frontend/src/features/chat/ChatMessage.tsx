@@ -1,3 +1,4 @@
+import { RichText } from "@/components/RichText";
 import type { ChatMessage as Message } from "@/types/review";
 
 export function ChatMessage({ message }: { message: Message }) {
@@ -10,7 +11,7 @@ export function ChatMessage({ message }: { message: Message }) {
         }`}
       >
         <span className="sr-only">{isUser ? "You: " : "Reviewer: "}</span>
-        {message.content}
+        {isUser ? message.content : <RichText>{message.content}</RichText>}
       </p>
     </div>
   );

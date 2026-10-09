@@ -2,7 +2,9 @@
 
 FastAPI + SQLAlchemy (async) + Alembic. Python 3.11+.
 
-No AI model is connected yet. The API runs end to end with a clearly-labelled **stub reviewer**;
+No AI model is connected yet. The API runs end to end with a **stub reviewer**: it returns a canned
+example review for the built-in sample code (`/shared/demo`) and a plain "not assessed" result, with
+real line counts, for anything else;
 a real model plugs in through one interface (see "Adding an AI model").
 
 ## Setup
@@ -41,15 +43,13 @@ tests/
 
 ## Endpoints
 
-| Method | Path                          | Purpose                           |
-| ------ | ----------------------------- | --------------------------------- |
-| GET    | `/api/health`                 | Liveness (process is up)          |
-| GET    | `/api/ready`                  | Readiness (database answers)      |
-| POST   | `/api/reviews`                | Review a snippet and save it      |
-| GET    | `/api/reviews?limit=&offset=` | Saved reviews, newest first       |
-| GET    | `/api/reviews/{id}`           | One review with its chat messages |
-| DELETE | `/api/reviews/{id}`           | Delete a review and its messages  |
-| POST   | `/api/reviews/{id}/messages`  | Ask a follow-up question          |
+| Method | Path                         | Purpose                           |
+| ------ | ---------------------------- | --------------------------------- |
+| GET    | `/api/health`                | Liveness (process is up)          |
+| GET    | `/api/ready`                 | Readiness (database answers)      |
+| POST   | `/api/reviews`               | Review a snippet and save it      |
+| GET    | `/api/reviews/{id}`          | One review with its chat messages |
+| POST   | `/api/reviews/{id}/messages` | Ask a follow-up question          |
 
 Errors always look like `{"error": {"code", "message", "requestId", "details"?}}`.
 
@@ -96,3 +96,13 @@ already has columns for them. The model's output must satisfy `ReviewResult` in 
   every review, so do not expose this publicly yet.**
 - Streaming responses, rate limits and usage budgets.
 - Request body size limits at the proxy, and security headers.
+
+## Review format (v2)
+
+`app/schemas.py` defines what a reviewer must return: purpose, summary, verdict, score and per-area
+breakdown, priority fixes, findings (explanation, impact, quoted evidence, fix, references,
+confidence, effort), **time/space complexity in Big-O** (overall and per function, with best,
+average and worst cases), **detected algorithms** (name, evidence, complexity, alternatives), measured
+metrics and limitations. Big-O strings are validated (`O(...)`), finding ids must be unique, and
+priority fixes must refer to real findings. Reviews saved with an older format cannot be read:
+delete `backend/app.db` after pulling this change.

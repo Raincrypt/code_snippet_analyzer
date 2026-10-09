@@ -1,7 +1,5 @@
-import { History } from "lucide-react";
 import type { Settings } from "@/types/settings";
 import { SettingsMenu } from "./SettingsMenu";
-import { Button } from "./ui/Button";
 
 type HeaderProps = {
   settings: Settings;
@@ -27,14 +25,6 @@ export function Header({ settings, onSettingsChange }: HeaderProps) {
         Code Snippet Analyzer
       </h1>
       <nav aria-label="App" className="ml-auto flex shrink-0 items-center gap-1">
-        <Button
-          variant="ghost"
-          disabled
-          title="Coming soon"
-          icon={<History className="size-4" aria-hidden />}
-        >
-          History
-        </Button>
         <SettingsMenu settings={settings} onChange={onSettingsChange} />
       </nav>
     </header>

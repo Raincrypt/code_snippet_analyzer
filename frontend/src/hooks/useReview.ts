@@ -8,6 +8,8 @@ export function toMessage(error: unknown): string {
 
 export function useReview(api: ReviewApi) {
   const [state, setState] = useState<ReviewState>({ status: "idle" });
+  // The exact code the current result belongs to; null unless a review has succeeded.
+  const [reviewedCode, setReviewedCode] = useState<string | null>(null);
   const controllerRef = useRef<AbortController | null>(null);
 
   // Cancel any in-flight request when the component unmounts.
@@ -18,10 +20,16 @@ export function useReview(api: ReviewApi) {
       controllerRef.current?.abort(); // a newer request supersedes an older one
       const controller = new AbortController();
       controllerRef.current = controller;
-      setState({ status: "loading" });
+      setReviewedCode(null);
+      setState({ status: "loading", stage: null });
       try {
-        const result = await api.review(request, controller.signal);
-        if (!controller.signal.aborted) setState({ status: "success", result });
+        const result = await api.review(request, controller.signal, (stage) => {
+          if (!controller.signal.aborted) setState({ status: "loading", stage });
+        });
+        if (!controller.signal.aborted) {
+          setReviewedCode(request.code);
+          setState({ status: "success", result });
+        }
       } catch (error) {
         if (!controller.signal.aborted) setState({ status: "error", message: toMessage(error) });
       }
@@ -29,5 +37,5 @@ export function useReview(api: ReviewApi) {
     [api],
   );
 
-  return { state, run };
+  return { state, run, reviewedCode };
 }

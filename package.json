@@ -36,8 +36,5 @@
     "prettier-plugin-tailwindcss": "^0.8.1",
     "typescript": "~5.9",
     "typescript-eslint": "^8.71.0"
-  },
-  "dependencies": {
-    "git": "^0.1.5"
   }
 }

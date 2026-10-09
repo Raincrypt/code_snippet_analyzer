@@ -1,8 +1,7 @@
 import time
 import uuid
-from typing import Annotated
 
-from fastapi import APIRouter, Query, Response
+from fastapi import APIRouter
 
 from app import repository
 from app.api.deps import ReviewerDep, SessionDep, SettingsDep
@@ -14,9 +13,7 @@ from app.schemas import (
     MessageOut,
     ReviewCreate,
     ReviewDetail,
-    ReviewPage,
     ReviewResult,
-    ReviewSummary,
 )
 from app.services.reviewer import AnswerRequest, ChatTurn, ReviewerError
 
@@ -68,38 +65,9 @@ async def create_review(
     return to_detail(review)
 
 
-@router.get("", response_model=ReviewPage)
-async def list_reviews(
-    session: SessionDep,
-    limit: Annotated[int, Query(ge=1, le=100)] = 20,
-    offset: Annotated[int, Query(ge=0)] = 0,
-) -> ReviewPage:
-    """Saved reviews, newest first."""
-    rows, total = await repository.list_reviews(session, limit, offset)
-    items = [
-        ReviewSummary(
-            id=row["id"],
-            language=row["language"],
-            score=row["result"]["score"],
-            issue_count=len(row["result"]["issues"]),
-            preview=row["preview"],
-            created_at=row["created_at"],
-        )
-        for row in rows
-    ]
-    return ReviewPage(items=items, total=total, limit=limit, offset=offset)
-
-
 @router.get("/{review_id}", response_model=ReviewDetail)
 async def get_review(review_id: uuid.UUID, session: SessionDep) -> ReviewDetail:
     return to_detail(await get_or_404(session, review_id))
-
-
-@router.delete("/{review_id}", status_code=204)
-async def delete_review(review_id: uuid.UUID, session: SessionDep) -> Response:
-    review = await get_or_404(session, review_id)
-    await repository.delete_review(session, review)
-    return Response(status_code=204)
 
 
 @router.post("/{review_id}/messages", response_model=MessageExchange, status_code=201)

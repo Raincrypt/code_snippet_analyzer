@@ -9,7 +9,7 @@ export const ReplyStyleSchema = z.enum(["brief", "balanced", "detailed"]);
 export const SettingsSchema = z.object({
   theme: ThemePreferenceSchema.catch("system"),
   editorFontSize: EditorFontSizeSchema.catch("medium"),
-  replyStyle: ReplyStyleSchema.catch("balanced"),
+  replyStyle: ReplyStyleSchema.catch("brief"),
 });
 
 export type ThemePreference = z.infer<typeof ThemePreferenceSchema>;
@@ -20,5 +20,5 @@ export type Settings = z.infer<typeof SettingsSchema>;
 export const DEFAULT_SETTINGS: Settings = {
   theme: "system",
   editorFontSize: "medium",
-  replyStyle: "balanced",
+  replyStyle: "brief",
 };

@@ -4,3 +4,6 @@ import "@testing-library/jest-dom/vitest";
 const noRects = { length: 0, item: () => null, [Symbol.iterator]: function* () {} };
 Range.prototype.getClientRects = () => noRects as unknown as DOMRectList;
 Range.prototype.getBoundingClientRect = () => new DOMRect();
+
+// jsdom does not implement scrollIntoView (the chat panel scrolls to the newest message).
+Element.prototype.scrollIntoView = () => {};

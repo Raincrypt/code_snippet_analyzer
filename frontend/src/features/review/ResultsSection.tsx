@@ -1,8 +1,9 @@
 import { ChevronUp } from "lucide-react";
 import type { CodeIssue, ReviewState } from "@/types/review";
+import { countBySeverity } from "@/utils/findings";
 import { summarizeReview } from "@/utils/reviewSummary";
 import { SEVERITY_ORDER, SEVERITY_STYLES, scoreColor } from "@/utils/severity";
-import { ResultsPanel } from "./ResultsPanel";
+import { ReviewPanel } from "./panel/ReviewPanel";
 
 type ResultsSectionProps = {
   review: ReviewState;
@@ -10,23 +11,30 @@ type ResultsSectionProps = {
   onToggle: () => void;
   /** Total height (header + body) in px while open. */
   height: number;
+  /** The code has been edited since the review was made. */
+  stale: boolean;
   onAsk: (issue: CodeIssue) => void;
   onLocate: (issue: CodeIssue) => void;
+  onLocateLines: (startLine: number, endLine: number) => void;
   activeKey: string | null;
   onRetry: () => void;
 };
 
-/** Collapsible bar: a one-line summary while closed, the full findings while open. */
+/** Collapsible bar: a one-line summary while closed, the full analysis while open. */
 export function ResultsSection({
   review,
   open,
   onToggle,
   height,
+  stale,
   onAsk,
   onLocate,
+  onLocateLines,
   activeKey,
   onRetry,
 }: ResultsSectionProps) {
+  const announcement =
+    summarizeReview(review) + (stale ? ". Out of date: the code has changed." : "");
   return (
     <section
       aria-label="Review results"
@@ -46,20 +54,22 @@ export function ResultsSection({
             aria-hidden
           />
           <span className="font-semibold">Review</span>
-          <InlineSummary review={review} />
+          <InlineSummary review={review} stale={stale} />
         </button>
       </h2>
 
       {/* Announces results even while the panel is collapsed. */}
       <span role="status" className="sr-only">
-        {summarizeReview(review)}
+        {announcement}
       </span>
 
       <div id="review-results" hidden={!open} className="min-h-0 flex-1 overflow-y-auto">
-        <ResultsPanel
+        <ReviewPanel
           review={review}
+          stale={stale}
           onAsk={onAsk}
           onLocate={onLocate}
+          onLocateLines={onLocateLines}
           activeKey={activeKey}
           onRetry={onRetry}
         />
@@ -68,28 +78,35 @@ export function ResultsSection({
   );
 }
 
-function InlineSummary({ review }: { review: ReviewState }) {
-  if (review.status === "success" && review.result.issues.length > 0) {
-    const { score, issues } = review.result;
-    return (
-      <span aria-hidden className="flex items-center gap-3 text-xs text-fg-muted">
-        <span className={`font-semibold tabular-nums ${scoreColor(score)}`}>{score}/10</span>
-        {SEVERITY_ORDER.map((sev) => {
-          const count = issues.filter((i) => i.severity === sev).length;
-          if (count === 0) return null;
-          return (
+function InlineSummary({ review, stale }: { review: ReviewState; stale: boolean }) {
+  const staleTag = stale && (
+    <span className="rounded bg-sev-warning/15 px-1.5 py-0.5 text-xs text-sev-warning">
+      Out of date
+    </span>
+  );
+
+  if (review.status === "success") {
+    const { score, issues, verdict } = review.result;
+    if (verdict !== "not-assessed" && score != null && issues.length > 0) {
+      const counts = countBySeverity(issues);
+      return (
+        <span aria-hidden className="flex items-center gap-3 text-xs text-fg-muted">
+          <span className={`font-semibold tabular-nums ${scoreColor(score)}`}>{score}/10</span>
+          {SEVERITY_ORDER.filter((sev) => counts[sev] > 0).map((sev) => (
             <span key={sev} className="inline-flex items-center gap-1 tabular-nums">
               <span className={`size-2 rounded-full ${SEVERITY_STYLES[sev].dot}`} />
-              {count}
+              {counts[sev]}
             </span>
-          );
-        })}
-      </span>
-    );
+          ))}
+          {staleTag}
+        </span>
+      );
+    }
   }
   return (
-    <span aria-hidden className="truncate text-xs text-fg-muted">
+    <span aria-hidden className="flex items-center gap-3 truncate text-xs text-fg-muted">
       {summarizeReview(review)}
+      {staleTag}
     </span>
   );
 }

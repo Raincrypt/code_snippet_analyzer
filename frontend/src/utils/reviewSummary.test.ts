@@ -1,4 +1,4 @@
-import { MOCK_REVIEW } from "@/mocks/review";
+import { CLEAN_REVIEW, MOCK_REVIEW } from "@/mocks/review";
 import { summarizeReview } from "./reviewSummary";
 
 describe("summarizeReview", () => {
@@ -9,13 +9,17 @@ describe("summarizeReview", () => {
   });
 
   it("describes a clean review", () => {
-    const result = { ...MOCK_REVIEW, issues: [] };
-    expect(summarizeReview({ status: "success", result })).toBe("No issues found");
+    expect(summarizeReview({ status: "success", result: CLEAN_REVIEW })).toBe("No issues found");
+  });
+
+  it("says when the code was not assessed", () => {
+    const result = { ...MOCK_REVIEW, verdict: "not-assessed" as const };
+    expect(summarizeReview({ status: "success", result })).toBe("Not assessed");
   });
 
   it("lists the score and severity counts in severity order", () => {
     expect(summarizeReview({ status: "success", result: MOCK_REVIEW })).toBe(
-      "Score 4 out of 10, 2 errors, 2 warnings, 1 info, 1 suggestion",
+      "Score 6 out of 10, 1 error, 3 warnings, 1 info, 1 suggestion",
     );
   });
 });

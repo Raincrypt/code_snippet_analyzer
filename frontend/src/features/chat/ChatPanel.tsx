@@ -1,4 +1,4 @@
-import { useEffect, useRef, type Ref } from "react";
+import { useEffect, useId, useRef, type Ref } from "react";
 import { SendHorizontal, Trash2 } from "lucide-react";
 import type { ChatMessage as Message } from "@/types/review";
 import { Button } from "@/components/ui/Button";
@@ -12,6 +12,8 @@ type ChatPanelProps = {
   onDraftChange: (value: string) => void;
   onSend: () => void;
   onClear: () => void;
+  /** Why sending is not allowed right now, or null when it is. Shown under the messages. */
+  sendBlockedReason: string | null;
   inputRef: Ref<HTMLTextAreaElement>;
 };
 
@@ -23,9 +25,17 @@ export function ChatPanel({
   onDraftChange,
   onSend,
   onClear,
+  sendBlockedReason,
   inputRef,
 }: ChatPanelProps) {
   const endRef = useRef<HTMLDivElement>(null);
+  const reasonId = useId();
+
+  // Every way of sending (button, Enter key, form submit) goes through this one check.
+  const canSend = !sendBlockedReason && !thinking && draft.trim().length > 0;
+  function trySend() {
+    if (canSend) onSend();
+  }
 
   // Keep the newest message in view.
   useEffect(() => {
@@ -78,37 +88,51 @@ export function ChatPanel({
         <div ref={endRef} />
       </div>
 
-      <form
-        className="flex items-end gap-2 border-t border-ink-700 p-3"
-        onSubmit={(e) => {
-          e.preventDefault();
-          onSend();
-        }}
-      >
-        <textarea
-          ref={inputRef}
-          value={draft}
-          onChange={(e) => onDraftChange(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey) {
-              e.preventDefault();
-              onSend();
-            }
-          }}
-          aria-label="Message"
-          placeholder="Ask a follow-up…"
-          rows={1}
-          className="field-sizing-content max-h-32 min-h-9 flex-1 resize-none rounded-md border border-ink-700 bg-ink-900 px-3 py-[7px] text-sm placeholder:text-fg-muted/60"
-        />
-        <Button
-          type="submit"
-          aria-label="Send message"
-          disabled={!draft.trim() || thinking}
-          className="w-9 px-0"
+      <div className="border-t border-ink-700">
+        {/* Always rendered so screen readers announce changes; hidden visually when empty. */}
+        <p
+          id={reasonId}
+          role="status"
+          className={
+            sendBlockedReason ? "px-4 pt-3 text-xs leading-relaxed text-fg-muted" : "sr-only"
+          }
         >
-          <SendHorizontal className="size-4" aria-hidden />
-        </Button>
-      </form>
+          {sendBlockedReason}
+        </p>
+        <form
+          className="flex items-end gap-2 p-3"
+          onSubmit={(e) => {
+            e.preventDefault();
+            trySend();
+          }}
+        >
+          <textarea
+            ref={inputRef}
+            value={draft}
+            onChange={(e) => onDraftChange(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                trySend();
+              }
+            }}
+            aria-label="Message"
+            aria-describedby={sendBlockedReason ? reasonId : undefined}
+            placeholder="Ask a follow-up…"
+            rows={1}
+            className="field-sizing-content max-h-32 min-h-9 flex-1 resize-none rounded-md border border-ink-700 bg-ink-900 px-3 py-[7px] text-sm placeholder:text-fg-muted/60"
+          />
+          <Button
+            type="submit"
+            aria-label="Send message"
+            title={sendBlockedReason ?? undefined}
+            disabled={!canSend}
+            className="w-9 px-0"
+          >
+            <SendHorizontal className="size-4" aria-hidden />
+          </Button>
+        </form>
+      </div>
     </section>
   );
 }

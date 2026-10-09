@@ -1,16 +1,12 @@
 """All database reads and writes for reviews and messages."""
 
 import uuid
-from typing import Any
 
-from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import Message, Review
 from app.schemas import MessageCreate, ReviewCreate
 from app.services.reviewer import AnswerOutcome, ReviewOutcome
-
-PREVIEW_CHARS = 120
 
 
 async def create_review(
@@ -40,31 +36,6 @@ async def create_review(
 
 async def get_review(session: AsyncSession, review_id: uuid.UUID) -> Review | None:
     return await session.get(Review, review_id)
-
-
-async def list_reviews(
-    session: AsyncSession, limit: int, offset: int
-) -> tuple[list[dict[str, Any]], int]:
-    """Newest first. Loads only the columns the list needs, not the full code."""
-    total = await session.scalar(select(func.count()).select_from(Review)) or 0
-    rows = await session.execute(
-        select(
-            Review.id,
-            Review.language,
-            Review.result,
-            Review.created_at,
-            func.substr(Review.code, 1, PREVIEW_CHARS).label("preview"),
-        )
-        .order_by(Review.created_at.desc(), Review.id)
-        .limit(limit)
-        .offset(offset)
-    )
-    return [dict(row._mapping) for row in rows], total
-
-
-async def delete_review(session: AsyncSession, review: Review) -> None:
-    await session.delete(review)
-    await session.commit()
 
 
 async def add_exchange(

@@ -6,6 +6,7 @@ An AI code reviewer. Paste code, get line-by-line findings, then ask follow-up q
 code-snippet-analyzer/
 ├── frontend/   React 19 + TypeScript + Vite + Tailwind v4
 ├── backend/    Python FastAPI + SQLAlchemy + Alembic (stub reviewer; no AI model yet)
+├── shared/     Example code + example review used by both sides (shared/demo)
 ├── .github/    CI: format, lint, typecheck, test, build
 └── eslint.config.js, .prettierrc.json, .editorconfig   shared tooling
 ```
@@ -53,4 +54,4 @@ Copy `backend/.env.example` to `backend/.env` to change backend settings. See `b
 
 ## Status
 
-The frontend still runs on mock data. The backend is complete as a base: reviews and chat messages are saved in a database, with a stub reviewer in place of an AI model. Next: connect the frontend to the API, then add an AI model behind the `Reviewer` interface.
+The frontend runs on mock data and shows the full review format: summary, findings with fixes, time and space complexity, recognised algorithms, and measured metrics. The backend is a complete base: reviews and chat messages are saved in a database, with a stub reviewer in place of an AI model. Next: connect the frontend to the API with streaming, then add an AI model behind the `Reviewer` interface.

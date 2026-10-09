@@ -65,7 +65,10 @@ describe("CodeEditor", () => {
   it("marks lines that have findings", () => {
     const { container } = setup({ issues: [{ line: 2, severity: "error" }] });
     expect(container.querySelectorAll(".cm-issue-line-error")).toHaveLength(1);
-    expect(container.querySelector(".cm-issue-dot-error")).toBeInTheDocument();
+    const realDots = [...container.querySelectorAll<HTMLElement>(".cm-issue-dot-error")].filter(
+      (dot) => dot.parentElement?.style.visibility !== "hidden",
+    );
+    expect(realDots).toHaveLength(1);
   });
 
   it("exposes revealLines without throwing", () => {

@@ -28,7 +28,7 @@ describe("SettingsMenu", () => {
     await open();
     expect(screen.getByRole("radio", { name: "System" })).toBeChecked();
     expect(screen.getByRole("radio", { name: "Medium" })).toBeChecked();
-    expect(screen.getByRole("radio", { name: "Balanced" })).toBeChecked();
+    expect(screen.getByRole("radio", { name: "Brief" })).toBeChecked();
   });
 
   it("offers Light, Dark and System themes", async () => {
@@ -44,8 +44,8 @@ describe("SettingsMenu", () => {
     expect(onChange).toHaveBeenLastCalledWith({ theme: "dark" });
     await userEvent.click(screen.getByRole("radio", { name: "Large" }));
     expect(onChange).toHaveBeenLastCalledWith({ editorFontSize: "large" });
-    await userEvent.click(screen.getByRole("radio", { name: "Brief" }));
-    expect(onChange).toHaveBeenLastCalledWith({ replyStyle: "brief" });
+    await userEvent.click(screen.getByRole("radio", { name: "Detailed" }));
+    expect(onChange).toHaveBeenLastCalledWith({ replyStyle: "detailed" });
   });
 
   it("closes on Escape and returns focus to the trigger", async () => {
