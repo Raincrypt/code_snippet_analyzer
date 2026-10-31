@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Check, Circle, LoaderCircle } from "lucide-react";
 import { REVIEW_STAGES, type ReviewStage } from "@/types/review";
 
@@ -9,7 +10,15 @@ export const STAGE_LABELS: Record<ReviewStage, string> = {
   verify: "Verifying the findings",
 };
 
+/** After this long, tell the person the review is slow rather than stuck. */
+export const SLOW_AFTER_MS = 20_000;
+
 export function ReviewProgress({ stage }: { stage: ReviewStage | null }) {
+  const [slow, setSlow] = useState(false);
+  useEffect(() => {
+    const timer = setTimeout(() => setSlow(true), SLOW_AFTER_MS);
+    return () => clearTimeout(timer);
+  }, []);
   const current = stage ? REVIEW_STAGES.indexOf(stage) : -1;
   return (
     <div role="status" aria-label="Review progress" className="mx-auto max-w-md px-4 py-8">
@@ -40,6 +49,11 @@ export function ReviewProgress({ stage }: { stage: ReviewStage | null }) {
           );
         })}
       </ol>
+      {slow && (
+        <p className="mt-5 text-xs text-fg-muted">
+          Still working. A thorough review of longer code can take a minute or two.
+        </p>
+      )}
     </div>
   );
 }

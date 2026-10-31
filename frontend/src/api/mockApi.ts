@@ -21,6 +21,8 @@ function delay(ms: number, signal?: AbortSignal): Promise<void> {
   });
 }
 
+let counter = 0;
+
 export function createMockApi({ outcome, latencyMs = 1500 }: MockOptions): ReviewApi {
   return {
     async review(_request, signal, onProgress) {
@@ -35,7 +37,8 @@ export function createMockApi({ outcome, latencyMs = 1500 }: MockOptions): Revie
           );
         }
       }
-      return outcome === "clean" ? CLEAN_REVIEW : MOCK_REVIEW;
+      counter += 1; // each review gets its own id, like the real backend
+      return { id: `mock-${counter}`, result: outcome === "clean" ? CLEAN_REVIEW : MOCK_REVIEW };
     },
     async ask({ replyStyle }, signal) {
       await delay(latencyMs * 0.6, signal);

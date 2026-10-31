@@ -1,5 +1,5 @@
-import { render, screen } from "@testing-library/react";
-import { STAGE_LABELS, ReviewProgress } from "./ReviewProgress";
+import { act, render, screen } from "@testing-library/react";
+import { SLOW_AFTER_MS, STAGE_LABELS, ReviewProgress } from "./ReviewProgress";
 
 describe("ReviewProgress", () => {
   it("lists every step", () => {
@@ -23,5 +23,19 @@ describe("ReviewProgress", () => {
   it("shows everything as pending before the first step starts", () => {
     render(<ReviewProgress stage={null} />);
     expect(screen.getAllByText("(pending)")).toHaveLength(5);
+  });
+
+  it("reassures the person only when the review is taking a while", () => {
+    vi.useFakeTimers();
+    try {
+      render(<ReviewProgress stage="analyse" />);
+      expect(screen.queryByText(/still working/i)).not.toBeInTheDocument();
+      act(() => {
+        vi.advanceTimersByTime(SLOW_AFTER_MS);
+      });
+      expect(screen.getByText(/still working/i)).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

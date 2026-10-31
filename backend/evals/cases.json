@@ -1,0 +1,1578 @@
+[
+  {
+    "id": "empty-input-crash",
+    "language": "python",
+    "code": "def largest(xs):\n    best = xs[0]\n    for x in xs:\n        if x > best:\n            best = x\n    return best\n",
+    "expect": {
+      "issue_lines": [
+        2
+      ],
+      "time": "O(n)"
+    },
+    "tags": [
+      "basic"
+    ]
+  },
+  {
+    "id": "sql-injection",
+    "language": "python",
+    "code": "import sqlite3\n\ndef find_user(conn, name):\n    cur = conn.cursor()\n    cur.execute(\"SELECT * FROM users WHERE name = '\" + name + \"'\")\n    return cur.fetchall()\n",
+    "expect": {
+      "issue_lines": [
+        5
+      ],
+      "issue_category": "security"
+    },
+    "rules": {
+      "issue_lines": [
+        5
+      ],
+      "issue_category": "security"
+    },
+    "tags": [
+      "bad-practice"
+    ]
+  },
+  {
+    "id": "off-by-one",
+    "language": "python",
+    "code": "def sum_first(xs, k):\n    total = 0\n    for i in range(k + 1):\n        total += xs[i]\n    return total\n",
+    "expect": {
+      "issue_lines": [
+        3,
+        4
+      ],
+      "time": "O(k)",
+      "reason_keywords": [
+        "k + 1",
+        "range",
+        "off-by-one",
+        "one more",
+        "one extra",
+        "extra element",
+        "k+1"
+      ]
+    },
+    "tags": [
+      "basic"
+    ]
+  },
+  {
+    "id": "unclosed-file",
+    "language": "python",
+    "code": "def read_all(path):\n    f = open(path)\n    data = f.read()\n    return data\n",
+    "expect": {
+      "issue_lines": [
+        2,
+        3
+      ]
+    },
+    "rules": {
+      "issue_lines": [
+        2
+      ]
+    },
+    "tags": [
+      "bad-practice"
+    ]
+  },
+  {
+    "id": "quadratic-duplicates",
+    "language": "python",
+    "code": "def has_duplicates(xs):\n    for i in range(len(xs)):\n        for j in range(i + 1, len(xs)):\n            if xs[i] == xs[j]:\n                return True\n    return False\n",
+    "expect": {
+      "time": "O(n^2)",
+      "issue_category": "performance"
+    },
+    "rules": {
+      "issue_category": "performance"
+    },
+    "tags": [
+      "complex-algorithm"
+    ]
+  },
+  {
+    "id": "binary-search",
+    "language": "python",
+    "code": "def search(xs, target):\n    lo, hi = 0, len(xs) - 1\n    while lo <= hi:\n        mid = (lo + hi) // 2\n        if xs[mid] == target:\n            return mid\n        if xs[mid] < target:\n            lo = mid + 1\n        else:\n            hi = mid - 1\n    return -1\n",
+    "expect": {
+      "algorithm": "binary search",
+      "time": "O(log n)",
+      "no_errors": true
+    },
+    "rules": {
+      "algorithm": "binary search",
+      "max_issues": 0
+    },
+    "tags": [
+      "complex-algorithm"
+    ]
+  },
+  {
+    "id": "merge-sort",
+    "language": "python",
+    "code": "def merge_sort(xs):\n    if len(xs) <= 1:\n        return xs\n    mid = len(xs) // 2\n    left = merge_sort(xs[:mid])\n    right = merge_sort(xs[mid:])\n    out = []\n    i = j = 0\n    while i < len(left) and j < len(right):\n        if left[i] <= right[j]:\n            out.append(left[i])\n            i += 1\n        else:\n            out.append(right[j])\n            j += 1\n    out.extend(left[i:])\n    out.extend(right[j:])\n    return out\n",
+    "expect": {
+      "algorithm": "merge sort",
+      "time": "O(n log n)",
+      "no_errors": true
+    },
+    "rules": {
+      "algorithm": "merge sort",
+      "max_issues": 0
+    },
+    "tags": [
+      "complex-algorithm"
+    ]
+  },
+  {
+    "id": "naive-fibonacci",
+    "language": "python",
+    "code": "def fib(n):\n    if n < 2:\n        return n\n    return fib(n - 1) + fib(n - 2)\n",
+    "expect": {
+      "time": "O(2^n)",
+      "issue_category": "performance"
+    },
+    "rules": {
+      "issue_lines": [
+        4
+      ],
+      "issue_category": "performance"
+    },
+    "tags": [
+      "complex-algorithm"
+    ]
+  },
+  {
+    "id": "bfs",
+    "language": "python",
+    "code": "from collections import deque\n\ndef bfs(graph, start):\n    seen = {start}\n    queue = deque([start])\n    order = []\n    while queue:\n        node = queue.popleft()\n        order.append(node)\n        for nxt in graph[node]:\n            if nxt not in seen:\n                seen.add(nxt)\n                queue.append(nxt)\n    return order\n",
+    "expect": {
+      "algorithm": "breadth-first search",
+      "time": "O(V + E)",
+      "no_errors": true
+    },
+    "rules": {
+      "algorithm": "breadth-first",
+      "max_issues": 0
+    },
+    "tags": [
+      "complex-algorithm"
+    ]
+  },
+  {
+    "id": "mutable-default",
+    "language": "python",
+    "code": "def add_item(item, items=[]):\n    items.append(item)\n    return items\n",
+    "expect": {
+      "issue_lines": [
+        1
+      ]
+    },
+    "rules": {
+      "issue_lines": [
+        1
+      ]
+    },
+    "tags": [
+      "bad-practice"
+    ]
+  },
+  {
+    "id": "js-loose-equality",
+    "language": "javascript",
+    "code": "function isZero(x) {\n  if (x == 0) {\n    return true;\n  }\n  return false;\n}\n",
+    "expect": {
+      "max_issues": 2,
+      "no_errors": true
+    },
+    "tags": [
+      "bad-practice"
+    ]
+  },
+  {
+    "id": "clean-add",
+    "language": "python",
+    "code": "def add(a: int, b: int) -> int:\n    \"\"\"Return the sum of a and b.\"\"\"\n    return a + b\n",
+    "expect": {
+      "max_issues": 0,
+      "time": "O(1)"
+    },
+    "rules": {
+      "max_issues": 0,
+      "time": "O(1)"
+    },
+    "tags": [
+      "basic"
+    ]
+  },
+  {
+    "id": "clean-count-words",
+    "language": "python",
+    "code": "from collections import Counter\n\n\ndef count_words(text: str) -> Counter[str]:\n    \"\"\"Count how often each lower-cased word appears.\"\"\"\n    return Counter(text.lower().split())\n",
+    "expect": {
+      "max_issues": 0,
+      "time": "O(n)"
+    },
+    "tags": [
+      "basic"
+    ]
+  },
+  {
+    "id": "sql-fstring",
+    "language": "python",
+    "code": "def get_order(cur, order_id):\n    cur.execute(f\"SELECT * FROM orders WHERE id = {order_id}\")\n    return cur.fetchone()\n",
+    "expect": {
+      "issue_lines": [
+        2
+      ],
+      "issue_category": "security"
+    },
+    "rules": {
+      "issue_lines": [
+        2
+      ],
+      "issue_category": "security"
+    },
+    "tags": [
+      "bad-practice"
+    ]
+  },
+  {
+    "id": "eval-user-input",
+    "language": "python",
+    "code": "def calculate(expression):\n    return eval(expression)\n",
+    "expect": {
+      "issue_lines": [
+        2
+      ],
+      "issue_category": "security"
+    },
+    "rules": {
+      "issue_lines": [
+        2
+      ],
+      "issue_category": "security"
+    },
+    "tags": [
+      "bad-practice"
+    ]
+  },
+  {
+    "id": "shell-true",
+    "language": "python",
+    "code": "import subprocess\n\ndef list_dir(path):\n    return subprocess.run(f\"ls {path}\", shell=True, capture_output=True, text=True).stdout\n",
+    "expect": {
+      "issue_lines": [
+        4
+      ],
+      "issue_category": "security"
+    },
+    "rules": {
+      "issue_lines": [
+        4
+      ],
+      "issue_category": "security"
+    },
+    "tags": [
+      "bad-practice"
+    ]
+  },
+  {
+    "id": "bare-except",
+    "language": "python",
+    "code": "def parse(value):\n    try:\n        return int(value)\n    except:\n        return None\n",
+    "expect": {
+      "issue_lines": [
+        4
+      ]
+    },
+    "rules": {
+      "issue_lines": [
+        4
+      ]
+    },
+    "tags": [
+      "bad-practice"
+    ]
+  },
+  {
+    "id": "syntax-error",
+    "language": "python",
+    "code": "def total(items):\n    result = 0\n    for item in items\n        result += item\n    return result\n",
+    "expect": {
+      "issue_lines": [
+        3
+      ]
+    },
+    "rules": {
+      "issue_lines": [
+        3
+      ]
+    },
+    "tags": [
+      "basic"
+    ]
+  },
+  {
+    "id": "division-by-zero",
+    "language": "python",
+    "code": "def average(values):\n    return sum(values) / len(values)\n",
+    "expect": {
+      "issue_lines": [
+        2
+      ],
+      "reason_keywords": [
+        "empty",
+        "zero"
+      ],
+      "time": "O(n)"
+    },
+    "tags": [
+      "basic"
+    ]
+  },
+  {
+    "id": "dfs-recursive",
+    "language": "python",
+    "code": "def dfs(graph, node, seen=None):\n    if seen is None:\n        seen = set()\n    seen.add(node)\n    for nxt in graph[node]:\n        if nxt not in seen:\n            dfs(graph, nxt, seen)\n    return seen\n",
+    "expect": {
+      "algorithm": "depth-first",
+      "time": "O(V + E)",
+      "no_errors": true
+    },
+    "rules": {
+      "algorithm": "depth-first",
+      "max_issues": 0
+    },
+    "tags": [
+      "complex-algorithm"
+    ]
+  },
+  {
+    "id": "bubble-sort",
+    "language": "python",
+    "code": "def bubble_sort(a):\n    n = len(a)\n    for i in range(n):\n        for j in range(n - i - 1):\n            if a[j] > a[j + 1]:\n                a[j], a[j + 1] = a[j + 1], a[j]\n    return a\n",
+    "expect": {
+      "algorithm": "bubble",
+      "time": "O(n^2)",
+      "no_errors": true
+    },
+    "rules": {
+      "algorithm": "bubble"
+    },
+    "tags": [
+      "complex-algorithm"
+    ]
+  },
+  {
+    "id": "euclid-gcd",
+    "language": "python",
+    "code": "def gcd(a, b):\n    while b:\n        a, b = b, a % b\n    return a\n",
+    "expect": {
+      "algorithm": "euclid",
+      "no_errors": true
+    },
+    "rules": {
+      "algorithm": "euclid",
+      "max_issues": 0
+    },
+    "tags": [
+      "complex-algorithm"
+    ]
+  },
+  {
+    "id": "memoized-fib",
+    "language": "python",
+    "code": "from functools import lru_cache\n\n@lru_cache(maxsize=None)\ndef fib(n):\n    if n < 2:\n        return n\n    return fib(n - 1) + fib(n - 2)\n",
+    "expect": {
+      "algorithm": "memoized",
+      "time": "O(n)",
+      "no_errors": true
+    },
+    "rules": {
+      "algorithm": "memoized",
+      "max_issues": 0
+    },
+    "tags": [
+      "complex-algorithm"
+    ]
+  },
+  {
+    "id": "clean-fizzbuzz",
+    "language": "python",
+    "code": "def fizzbuzz(n: int) -> list[str]:\n    out = []\n    for i in range(1, n + 1):\n        if i % 15 == 0:\n            out.append(\"FizzBuzz\")\n        elif i % 3 == 0:\n            out.append(\"Fizz\")\n        elif i % 5 == 0:\n            out.append(\"Buzz\")\n        else:\n            out.append(str(i))\n    return out\n",
+    "expect": {
+      "max_issues": 0,
+      "time": "O(n)"
+    },
+    "rules": {
+      "max_issues": 0
+    },
+    "tags": [
+      "basic"
+    ]
+  },
+  {
+    "id": "js-sql-concat",
+    "language": "javascript",
+    "code": "function findUser(db, name) {\n  return db.query(\"SELECT * FROM users WHERE name = '\" + name + \"'\");\n}\n",
+    "expect": {
+      "issue_lines": [
+        2
+      ],
+      "issue_category": "security"
+    },
+    "tags": [
+      "bad-practice"
+    ]
+  },
+  {
+    "id": "js-unhandled-promise",
+    "language": "javascript",
+    "code": "async function load(url) {\n  const res = await fetch(url);\n  return res.json();\n}\n",
+    "expect": {
+      "issue_lines": [
+        2,
+        3
+      ],
+      "reason_keywords": [
+        "error",
+        "ok",
+        "status",
+        "catch",
+        "reject"
+      ]
+    },
+    "tags": [
+      "basic"
+    ]
+  },
+  {
+    "id": "alg-dijkstra",
+    "language": "python",
+    "tags": [
+      "complex-algorithm"
+    ],
+    "code": "import heapq\n\ndef dijkstra(graph, source):\n    dist = {source: 0}\n    heap = [(0, source)]\n    while heap:\n        d, node = heapq.heappop(heap)\n        if d > dist.get(node, float(\"inf\")):\n            continue\n        for neighbour, weight in graph[node]:\n            nd = d + weight\n            if nd < dist.get(neighbour, float(\"inf\")):\n                dist[neighbour] = nd\n                heapq.heappush(heap, (nd, neighbour))\n    return dist\n",
+    "expect": {
+      "algorithm": [
+        "dijkstra"
+      ],
+      "time_any": [
+        "O((V + E) log V)",
+        "O(E log V)",
+        "O((V + E) * log V)",
+        "O(E log V + V log V)",
+        "O(V log V + E log V)",
+        "O(E + V log V)"
+      ],
+      "no_errors": true
+    },
+    "rules": {
+      "algorithm": [
+        "dijkstra"
+      ],
+      "max_issues": 0
+    }
+  },
+  {
+    "id": "alg-quicksort",
+    "language": "python",
+    "tags": [
+      "complex-algorithm"
+    ],
+    "code": "def quicksort(items):\n    if len(items) <= 1:\n        return items\n    pivot = items[len(items) // 2]\n    smaller = [x for x in items if x < pivot]\n    equal = [x for x in items if x == pivot]\n    larger = [x for x in items if x > pivot]\n    return quicksort(smaller) + equal + quicksort(larger)\n",
+    "expect": {
+      "algorithm": [
+        "quick sort",
+        "quicksort"
+      ],
+      "time_any": [
+        "O(n^2)",
+        "O(n log n)"
+      ],
+      "no_errors": true
+    },
+    "rules": {
+      "algorithm": [
+        "quick sort"
+      ],
+      "max_issues": 0
+    }
+  },
+  {
+    "id": "alg-union-find",
+    "language": "python",
+    "tags": [
+      "complex-algorithm"
+    ],
+    "code": "class DisjointSet:\n    def __init__(self, n):\n        self.parent = list(range(n))\n        self.rank = [0] * n\n\n    def find(self, x):\n        if self.parent[x] != x:\n            self.parent[x] = self.find(self.parent[x])\n        return self.parent[x]\n\n    def union(self, a, b):\n        ra, rb = self.find(a), self.find(b)\n        if ra == rb:\n            return False\n        if self.rank[ra] < self.rank[rb]:\n            ra, rb = rb, ra\n        self.parent[rb] = ra\n        if self.rank[ra] == self.rank[rb]:\n            self.rank[ra] += 1\n        return True\n",
+    "expect": {
+      "algorithm": [
+        "union",
+        "disjoint"
+      ],
+      "no_errors": true
+    },
+    "rules": {
+      "algorithm": [
+        "union-find"
+      ],
+      "max_issues": 0
+    }
+  },
+  {
+    "id": "alg-topological-sort",
+    "language": "python",
+    "tags": [
+      "complex-algorithm"
+    ],
+    "code": "from collections import deque\n\ndef topological_sort(graph):\n    indegree = {node: 0 for node in graph}\n    for node in graph:\n        for nxt in graph[node]:\n            indegree[nxt] += 1\n    queue = deque(node for node in graph if indegree[node] == 0)\n    order = []\n    while queue:\n        node = queue.popleft()\n        order.append(node)\n        for nxt in graph[node]:\n            indegree[nxt] -= 1\n            if indegree[nxt] == 0:\n                queue.append(nxt)\n    return order if len(order) == len(graph) else None\n",
+    "expect": {
+      "algorithm": [
+        "topological"
+      ],
+      "time_any": [
+        "O(V + E)",
+        "O(E + V)",
+        "O(n + m)"
+      ],
+      "no_errors": true
+    },
+    "rules": {
+      "algorithm": [
+        "topological"
+      ],
+      "max_issues": 0
+    }
+  },
+  {
+    "id": "alg-lcs-dp",
+    "language": "python",
+    "tags": [
+      "complex-algorithm"
+    ],
+    "code": "def lcs_length(a, b):\n    m, n = len(a), len(b)\n    dp = [[0] * (n + 1) for _ in range(m + 1)]\n    for i in range(1, m + 1):\n        for j in range(1, n + 1):\n            if a[i - 1] == b[j - 1]:\n                dp[i][j] = dp[i - 1][j - 1] + 1\n            else:\n                dp[i][j] = max(dp[i - 1][j], dp[i][j - 1])\n    return dp[m][n]\n",
+    "expect": {
+      "algorithm": [
+        "longest common subsequence",
+        "lcs",
+        "dynamic programming"
+      ],
+      "time_any": [
+        "O(m * n)",
+        "O(m*n)",
+        "O(n * m)",
+        "O(n^2)"
+      ],
+      "no_errors": true
+    }
+  },
+  {
+    "id": "alg-knapsack-dp",
+    "language": "python",
+    "tags": [
+      "complex-algorithm"
+    ],
+    "code": "def knapsack(weights, values, capacity):\n    n = len(weights)\n    dp = [0] * (capacity + 1)\n    for i in range(n):\n        for w in range(capacity, weights[i] - 1, -1):\n            dp[w] = max(dp[w], dp[w - weights[i]] + values[i])\n    return dp[capacity]\n",
+    "expect": {
+      "algorithm": [
+        "knapsack",
+        "dynamic programming"
+      ],
+      "time_any": [
+        "O(n * W)",
+        "O(nW)",
+        "O(n * capacity)",
+        "O(n * C)",
+        "O(nC)"
+      ],
+      "no_errors": true
+    }
+  },
+  {
+    "id": "alg-n-queens",
+    "language": "python",
+    "tags": [
+      "complex-algorithm"
+    ],
+    "code": "def solve_n_queens(n):\n    solutions = []\n    cols = set()\n    diag1 = set()\n    diag2 = set()\n    placement = []\n\n    def place(row):\n        if row == n:\n            solutions.append(placement[:])\n            return\n        for col in range(n):\n            if col in cols or row - col in diag1 or row + col in diag2:\n                continue\n            cols.add(col)\n            diag1.add(row - col)\n            diag2.add(row + col)\n            placement.append(col)\n            place(row + 1)\n            placement.pop()\n            diag2.remove(row + col)\n            diag1.remove(row - col)\n            cols.remove(col)\n\n    place(0)\n    return solutions\n",
+    "expect": {
+      "algorithm": [
+        "backtracking",
+        "n-queens",
+        "n queens"
+      ],
+      "time_any": [
+        "O(n!)",
+        "O(n^n)"
+      ],
+      "no_errors": true
+    },
+    "rules": {
+      "no_algorithm": [
+        "depth-first"
+      ],
+      "max_issues": 0
+    }
+  },
+  {
+    "id": "alg-sieve",
+    "language": "python",
+    "tags": [
+      "complex-algorithm"
+    ],
+    "code": "def primes_up_to(limit):\n    is_prime = [True] * (limit + 1)\n    is_prime[0:2] = [False, False]\n    for i in range(2, int(limit ** 0.5) + 1):\n        if is_prime[i]:\n            for multiple in range(i * i, limit + 1, i):\n                is_prime[multiple] = False\n    return [n for n, ok in enumerate(is_prime) if ok]\n",
+    "expect": {
+      "algorithm": [
+        "sieve"
+      ],
+      "time_any": [
+        "O(n log log n)",
+        "O(n log(log n))",
+        "O(limit log log limit)"
+      ],
+      "no_errors": true
+    },
+    "rules": {
+      "algorithm": [
+        "sieve"
+      ],
+      "max_issues": 0
+    }
+  },
+  {
+    "id": "alg-kadane",
+    "language": "python",
+    "tags": [
+      "complex-algorithm"
+    ],
+    "code": "def max_subarray(nums):\n    best = current = nums[0]\n    for x in nums[1:]:\n        current = max(x, current + x)\n        best = max(best, current)\n    return best\n",
+    "expect": {
+      "algorithm": [
+        "kadane",
+        "maximum subarray",
+        "max subarray"
+      ],
+      "time": "O(n)",
+      "issue_lines": [
+        2
+      ],
+      "reason_keywords": [
+        "empty",
+        "index"
+      ]
+    },
+    "rules": {
+      "algorithm": [
+        "kadane"
+      ]
+    }
+  },
+  {
+    "id": "alg-kmp",
+    "language": "python",
+    "tags": [
+      "complex-algorithm"
+    ],
+    "code": "def kmp_search(text, pattern):\n    if not pattern:\n        return 0\n    failure = [0] * len(pattern)\n    k = 0\n    for i in range(1, len(pattern)):\n        while k > 0 and pattern[k] != pattern[i]:\n            k = failure[k - 1]\n        if pattern[k] == pattern[i]:\n            k += 1\n        failure[i] = k\n    k = 0\n    for i, ch in enumerate(text):\n        while k > 0 and pattern[k] != ch:\n            k = failure[k - 1]\n        if pattern[k] == ch:\n            k += 1\n        if k == len(pattern):\n            return i - k + 1\n    return -1\n",
+    "expect": {
+      "algorithm": [
+        "knuth",
+        "kmp"
+      ],
+      "time_any": [
+        "O(n + m)",
+        "O(m + n)",
+        "O(n)"
+      ],
+      "no_errors": true
+    }
+  },
+  {
+    "id": "alg-lru-cache",
+    "language": "python",
+    "tags": [
+      "complex-algorithm"
+    ],
+    "code": "from collections import OrderedDict\n\nclass LRUCache:\n    def __init__(self, capacity):\n        self.capacity = capacity\n        self.items = OrderedDict()\n\n    def get(self, key):\n        if key not in self.items:\n            return None\n        self.items.move_to_end(key)\n        return self.items[key]\n\n    def put(self, key, value):\n        self.items[key] = value\n        self.items.move_to_end(key)\n        if len(self.items) > self.capacity:\n            self.items.popitem(last=False)\n",
+    "expect": {
+      "algorithm": [
+        "lru",
+        "least recently used"
+      ],
+      "time": "O(1)",
+      "no_errors": true
+    },
+    "rules": {
+      "algorithm": [
+        "lru"
+      ],
+      "max_issues": 0
+    }
+  },
+  {
+    "id": "alg-matrix-multiply",
+    "language": "python",
+    "tags": [
+      "complex-algorithm"
+    ],
+    "code": "def matmul(a, b):\n    n, m, p = len(a), len(b), len(b[0])\n    result = [[0] * p for _ in range(n)]\n    for i in range(n):\n        for j in range(p):\n            for k in range(m):\n                result[i][j] += a[i][k] * b[k][j]\n    return result\n",
+    "expect": {
+      "algorithm": [
+        "matrix multiplication",
+        "matrix multiply"
+      ],
+      "time_any": [
+        "O(n * m * p)",
+        "O(nmp)",
+        "O(n^3)",
+        "O(n * p * m)"
+      ],
+      "no_errors": true
+    },
+    "rules": {
+      "algorithm": [
+        "matrix multiplication"
+      ],
+      "max_issues": 0
+    }
+  },
+  {
+    "id": "alg-permutations",
+    "language": "python",
+    "tags": [
+      "complex-algorithm"
+    ],
+    "code": "def permutations(items):\n    if len(items) <= 1:\n        return [items[:]]\n    result = []\n    for i in range(len(items)):\n        rest = items[:i] + items[i + 1:]\n        for tail in permutations(rest):\n            result.append([items[i]] + tail)\n    return result\n",
+    "expect": {
+      "time_any": [
+        "O(n!)",
+        "O(n * n!)",
+        "O(n\u00b7n!)"
+      ],
+      "no_errors": true
+    },
+    "rules": {
+      "max_issues": 0
+    }
+  },
+  {
+    "id": "alg-inorder-traversal",
+    "language": "python",
+    "tags": [
+      "complex-algorithm"
+    ],
+    "code": "class Node:\n    def __init__(self, value, left=None, right=None):\n        self.value = value\n        self.left = left\n        self.right = right\n\ndef inorder(node, visit):\n    if node is None:\n        return\n    inorder(node.left, visit)\n    visit(node.value)\n    inorder(node.right, visit)\n",
+    "expect": {
+      "algorithm": [
+        "in-order",
+        "inorder",
+        "tree traversal",
+        "depth-first"
+      ],
+      "time": "O(n)",
+      "no_errors": true
+    },
+    "rules": {
+      "max_issues": 0
+    }
+  },
+  {
+    "id": "alg-floyd-warshall",
+    "language": "python",
+    "tags": [
+      "complex-algorithm"
+    ],
+    "code": "def floyd_warshall(dist):\n    n = len(dist)\n    for k in range(n):\n        for i in range(n):\n            for j in range(n):\n                dist[i][j] = min(dist[i][j], dist[i][k] + dist[k][j])\n    return dist\n",
+    "expect": {
+      "algorithm": [
+        "floyd"
+      ],
+      "time_any": [
+        "O(n^3)",
+        "O(V^3)"
+      ],
+      "no_errors": true
+    },
+    "rules": {
+      "algorithm": [
+        "floyd"
+      ],
+      "max_issues": 0
+    }
+  },
+  {
+    "id": "alg-count-inversions",
+    "language": "python",
+    "tags": [
+      "complex-algorithm"
+    ],
+    "code": "def count_inversions(arr):\n    if len(arr) <= 1:\n        return arr, 0\n    mid = len(arr) // 2\n    left, a = count_inversions(arr[:mid])\n    right, b = count_inversions(arr[mid:])\n    merged, c = [], 0\n    i = j = 0\n    while i < len(left) and j < len(right):\n        if left[i] <= right[j]:\n            merged.append(left[i])\n            i += 1\n        else:\n            merged.append(right[j])\n            c += len(left) - i\n            j += 1\n    merged.extend(left[i:])\n    merged.extend(right[j:])\n    return merged, a + b + c\n",
+    "expect": {
+      "algorithm": [
+        "merge sort",
+        "inversion"
+      ],
+      "time": "O(n log n)",
+      "no_errors": true
+    },
+    "rules": {
+      "algorithm": [
+        "merge sort"
+      ],
+      "max_issues": 0
+    }
+  },
+  {
+    "id": "alg-two-sum-hash",
+    "language": "python",
+    "tags": [
+      "complex-algorithm"
+    ],
+    "code": "def two_sum(nums, target):\n    seen = {}\n    for i, n in enumerate(nums):\n        if target - n in seen:\n            return seen[target - n], i\n        seen[n] = i\n    return None\n",
+    "expect": {
+      "time": "O(n)",
+      "no_errors": true
+    },
+    "rules": {
+      "max_issues": 0
+    }
+  },
+  {
+    "id": "alg-sliding-window",
+    "language": "python",
+    "tags": [
+      "complex-algorithm"
+    ],
+    "code": "def max_window_sum(nums, k):\n    window = sum(nums[:k])\n    best = window\n    for i in range(k, len(nums)):\n        window += nums[i] - nums[i - k]\n        best = max(best, window)\n    return best\n",
+    "expect": {
+      "time": "O(n)",
+      "no_errors": true
+    },
+    "rules": {
+      "max_issues": 0
+    }
+  },
+  {
+    "id": "alg-trie",
+    "language": "python",
+    "tags": [
+      "complex-algorithm"
+    ],
+    "code": "class Trie:\n    def __init__(self):\n        self.root = {}\n\n    def insert(self, word):\n        node = self.root\n        for ch in word:\n            node = node.setdefault(ch, {})\n        node[\"$\"] = True\n\n    def contains(self, word):\n        node = self.root\n        for ch in word:\n            if ch not in node:\n                return False\n            node = node[ch]\n        return \"$\" in node\n",
+    "expect": {
+      "algorithm": [
+        "trie",
+        "prefix tree"
+      ],
+      "no_errors": true
+    },
+    "rules": {
+      "max_issues": 0
+    }
+  },
+  {
+    "id": "alg-heap-sort",
+    "language": "python",
+    "tags": [
+      "complex-algorithm"
+    ],
+    "code": "def heapify(a, n, i):\n    largest = i\n    left, right = 2 * i + 1, 2 * i + 2\n    if left < n and a[left] > a[largest]:\n        largest = left\n    if right < n and a[right] > a[largest]:\n        largest = right\n    if largest != i:\n        a[i], a[largest] = a[largest], a[i]\n        heapify(a, n, largest)\n\ndef heap_sort(a):\n    n = len(a)\n    for i in range(n // 2 - 1, -1, -1):\n        heapify(a, n, i)\n    for end in range(n - 1, 0, -1):\n        a[0], a[end] = a[end], a[0]\n        heapify(a, end, 0)\n    return a\n",
+    "expect": {
+      "algorithm": [
+        "heap sort",
+        "heapsort"
+      ],
+      "time": "O(n log n)",
+      "no_errors": true
+    },
+    "rules": {
+      "max_issues": 0
+    }
+  },
+  {
+    "id": "alg-merge-intervals",
+    "language": "python",
+    "tags": [
+      "complex-algorithm"
+    ],
+    "code": "def merge_intervals(intervals):\n    intervals = sorted(intervals)\n    merged = [intervals[0]]\n    for start, end in intervals[1:]:\n        last = merged[-1]\n        if start <= last[1]:\n            last[1] = max(last[1], end)\n        else:\n            merged.append([start, end])\n    return merged\n",
+    "expect": {
+      "time": "O(n log n)",
+      "issue_lines": [
+        3
+      ],
+      "reason_keywords": [
+        "empty",
+        "index"
+      ]
+    }
+  },
+  {
+    "id": "bp-hardcoded-credentials",
+    "language": "python",
+    "tags": [
+      "bad-practice"
+    ],
+    "code": "import psycopg2\n\nDB_PASSWORD = \"hunter2-prod\"\n\ndef connect():\n    return psycopg2.connect(host=\"db.internal\", user=\"admin\", password=DB_PASSWORD)\n",
+    "expect": {
+      "issue_lines": [
+        3
+      ],
+      "issue_category": "security",
+      "reason_keywords": [
+        "hard",
+        "secret",
+        "credential",
+        "password",
+        "environment"
+      ]
+    },
+    "rules": {
+      "issue_lines": [
+        3
+      ],
+      "issue_category": "security"
+    }
+  },
+  {
+    "id": "bp-weak-hash-password",
+    "language": "python",
+    "tags": [
+      "bad-practice"
+    ],
+    "code": "import hashlib\n\ndef hash_password(password):\n    return hashlib.md5(password.encode()).hexdigest()\n",
+    "expect": {
+      "issue_lines": [
+        4
+      ],
+      "issue_category": "security",
+      "reason_keywords": [
+        "md5",
+        "weak",
+        "salt",
+        "bcrypt",
+        "broken"
+      ]
+    },
+    "rules": {
+      "issue_lines": [
+        4
+      ],
+      "issue_category": "security"
+    }
+  },
+  {
+    "id": "bp-pickle-loads",
+    "language": "python",
+    "tags": [
+      "bad-practice"
+    ],
+    "code": "import pickle\n\ndef load_session(raw_bytes):\n    return pickle.loads(raw_bytes)\n",
+    "expect": {
+      "issue_lines": [
+        4
+      ],
+      "issue_category": "security",
+      "reason_keywords": [
+        "pickle",
+        "arbitrary",
+        "untrusted",
+        "code"
+      ]
+    },
+    "rules": {
+      "issue_lines": [
+        4
+      ],
+      "issue_category": "security"
+    }
+  },
+  {
+    "id": "bp-yaml-load",
+    "language": "python",
+    "tags": [
+      "bad-practice"
+    ],
+    "code": "import yaml\n\ndef read_config(text):\n    return yaml.load(text)\n",
+    "expect": {
+      "issue_lines": [
+        4
+      ],
+      "issue_category": "security",
+      "reason_keywords": [
+        "safe_load",
+        "arbitrary",
+        "unsafe",
+        "loader"
+      ]
+    },
+    "rules": {
+      "issue_lines": [
+        4
+      ],
+      "issue_category": "security"
+    }
+  },
+  {
+    "id": "bp-requests-no-verify",
+    "language": "python",
+    "tags": [
+      "bad-practice"
+    ],
+    "code": "import requests\n\ndef fetch(url):\n    response = requests.get(url, verify=False)\n    return response.json()\n",
+    "expect": {
+      "issue_lines": [
+        4
+      ],
+      "reason_keywords": [
+        "verify",
+        "certificate",
+        "tls",
+        "ssl",
+        "timeout"
+      ]
+    },
+    "rules": {
+      "issue_lines": [
+        4
+      ],
+      "issue_category": "security"
+    }
+  },
+  {
+    "id": "bp-os-system-concat",
+    "language": "python",
+    "tags": [
+      "bad-practice"
+    ],
+    "code": "import os\n\ndef ping(host):\n    os.system(\"ping -c 1 \" + host)\n",
+    "expect": {
+      "issue_lines": [
+        4
+      ],
+      "issue_category": "security",
+      "reason_keywords": [
+        "inject",
+        "shell",
+        "command",
+        "subprocess"
+      ]
+    },
+    "rules": {
+      "issue_lines": [
+        4
+      ],
+      "issue_category": "security"
+    }
+  },
+  {
+    "id": "bp-swallowed-exception",
+    "language": "python",
+    "tags": [
+      "bad-practice"
+    ],
+    "code": "def save(record, db):\n    try:\n        db.insert(record)\n    except Exception:\n        pass\n",
+    "expect": {
+      "issue_lines": [
+        4,
+        5
+      ],
+      "reason_keywords": [
+        "swallow",
+        "silent",
+        "ignore",
+        "hide",
+        "log"
+      ]
+    },
+    "rules": {
+      "issue_lines": [
+        4,
+        5
+      ]
+    }
+  },
+  {
+    "id": "bp-mutate-while-iterating",
+    "language": "python",
+    "tags": [
+      "bad-practice"
+    ],
+    "code": "def remove_negatives(numbers):\n    for n in numbers:\n        if n < 0:\n            numbers.remove(n)\n    return numbers\n",
+    "expect": {
+      "issue_lines": [
+        2,
+        3,
+        4
+      ],
+      "issue_category": "bug",
+      "reason_keywords": [
+        "iterat",
+        "skip",
+        "modif",
+        "mutat",
+        "copy"
+      ]
+    },
+    "rules": {
+      "issue_lines": [
+        2,
+        3,
+        4
+      ],
+      "issue_category": "bug"
+    }
+  },
+  {
+    "id": "bp-pop-front-queue",
+    "language": "python",
+    "tags": [
+      "bad-practice"
+    ],
+    "code": "def drain(queue):\n    results = []\n    while queue:\n        item = queue.pop(0)\n        results.append(item)\n    return results\n",
+    "expect": {
+      "issue_lines": [
+        4
+      ],
+      "issue_category": "performance",
+      "reason_keywords": [
+        "deque",
+        "popleft",
+        "o(n)",
+        "linear",
+        "shift"
+      ]
+    },
+    "rules": {
+      "issue_lines": [
+        4
+      ],
+      "issue_category": "performance"
+    }
+  },
+  {
+    "id": "bp-list-membership",
+    "language": "python",
+    "tags": [
+      "bad-practice"
+    ],
+    "code": "def unique(items):\n    seen = []\n    for item in items:\n        if item not in seen:\n            seen.append(item)\n    return seen\n",
+    "expect": {
+      "issue_lines": [
+        4
+      ],
+      "issue_category": "performance",
+      "reason_keywords": [
+        "set",
+        "o(n)",
+        "linear",
+        "quadratic",
+        "hash"
+      ],
+      "time": "O(n^2)"
+    },
+    "rules": {
+      "issue_lines": [
+        4
+      ],
+      "issue_category": "performance"
+    }
+  },
+  {
+    "id": "bp-deep-nesting",
+    "language": "python",
+    "tags": [
+      "bad-practice"
+    ],
+    "code": "def process(order):\n    if order:\n        if order.items:\n            for item in order.items:\n                if item.in_stock:\n                    if item.price > 0:\n                        if order.customer:\n                            return item.price * item.quantity\n    return 0\n",
+    "expect": {
+      "issue_lines": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "reason_keywords": [
+        "nest",
+        "early return",
+        "guard",
+        "flatten",
+        "readab"
+      ]
+    },
+    "rules": {
+      "issue_lines": [
+        1
+      ]
+    }
+  },
+  {
+    "id": "bp-global-state",
+    "language": "python",
+    "tags": [
+      "bad-practice"
+    ],
+    "code": "counter = 0\n\ndef next_id():\n    global counter\n    counter += 1\n    return counter\n",
+    "expect": {
+      "issue_lines": [
+        4,
+        5
+      ],
+      "reason_keywords": [
+        "global",
+        "state",
+        "thread",
+        "class",
+        "itertools"
+      ]
+    },
+    "rules": {
+      "issue_lines": [
+        4
+      ]
+    }
+  },
+  {
+    "id": "bp-shadow-builtins",
+    "language": "python",
+    "tags": [
+      "bad-practice"
+    ],
+    "code": "def longest(list, max=0):\n    for item in list:\n        if len(item) > max:\n            max = len(item)\n    return max\n",
+    "expect": {
+      "issue_lines": [
+        1
+      ],
+      "reason_keywords": [
+        "shadow",
+        "built-in",
+        "builtin",
+        "rename"
+      ]
+    },
+    "rules": {
+      "issue_lines": [
+        1
+      ]
+    }
+  },
+  {
+    "id": "bp-none-equality",
+    "language": "python",
+    "tags": [
+      "bad-practice"
+    ],
+    "code": "def describe(value):\n    if value == None:\n        return \"nothing\"\n    return str(value)\n",
+    "expect": {
+      "issue_lines": [
+        2
+      ],
+      "reason_keywords": [
+        "is none",
+        "identity",
+        "`is`",
+        " is "
+      ]
+    },
+    "rules": {
+      "issue_lines": [
+        2
+      ]
+    }
+  },
+  {
+    "id": "bp-mktemp",
+    "language": "python",
+    "tags": [
+      "bad-practice"
+    ],
+    "code": "import tempfile\n\ndef scratch_file():\n    path = tempfile.mktemp()\n    return open(path, \"w\")\n",
+    "expect": {
+      "issue_lines": [
+        4
+      ],
+      "issue_category": "security",
+      "reason_keywords": [
+        "mktemp",
+        "race",
+        "mkstemp",
+        "temporary",
+        "predictable"
+      ]
+    },
+    "rules": {
+      "issue_lines": [
+        4
+      ],
+      "issue_category": "security"
+    }
+  },
+  {
+    "id": "bp-flask-debug",
+    "language": "python",
+    "tags": [
+      "bad-practice"
+    ],
+    "code": "from flask import Flask\n\napp = Flask(__name__)\n\nif __name__ == \"__main__\":\n    app.run(host=\"0.0.0.0\", debug=True)\n",
+    "expect": {
+      "issue_lines": [
+        6
+      ],
+      "issue_category": "security",
+      "reason_keywords": [
+        "debug",
+        "console",
+        "production",
+        "werkzeug"
+      ]
+    },
+    "rules": {
+      "issue_lines": [
+        6
+      ],
+      "issue_category": "security"
+    }
+  },
+  {
+    "id": "bp-tar-extractall",
+    "language": "python",
+    "tags": [
+      "bad-practice"
+    ],
+    "code": "import tarfile\n\ndef unpack(archive_path, target):\n    with tarfile.open(archive_path) as tar:\n        tar.extractall(target)\n",
+    "expect": {
+      "issue_lines": [
+        5
+      ],
+      "issue_category": "security",
+      "reason_keywords": [
+        "traversal",
+        "extractall",
+        "untrusted",
+        "../",
+        "filter",
+        "path"
+      ]
+    },
+    "rules": {
+      "issue_lines": [
+        5
+      ],
+      "issue_category": "security"
+    }
+  },
+  {
+    "id": "bp-insecure-random-token",
+    "language": "python",
+    "tags": [
+      "bad-practice"
+    ],
+    "code": "import random\nimport string\n\ndef make_reset_token():\n    return \"\".join(random.choice(string.ascii_letters) for _ in range(16))\n",
+    "expect": {
+      "issue_lines": [
+        5
+      ],
+      "issue_category": "security",
+      "reason_keywords": [
+        "secrets",
+        "predictable",
+        "cryptograph",
+        "random"
+      ]
+    }
+  },
+  {
+    "id": "bp-path-traversal",
+    "language": "python",
+    "tags": [
+      "bad-practice"
+    ],
+    "code": "import os\n\nBASE = \"/srv/uploads\"\n\ndef read_upload(filename):\n    with open(os.path.join(BASE, filename)) as f:\n        return f.read()\n",
+    "expect": {
+      "issue_lines": [
+        6,
+        7
+      ],
+      "issue_category": "security",
+      "reason_keywords": [
+        "traversal",
+        "../",
+        "sanitiz",
+        "validat",
+        "normaliz",
+        "path"
+      ]
+    }
+  },
+  {
+    "id": "bp-n-plus-one-queries",
+    "language": "python",
+    "tags": [
+      "bad-practice"
+    ],
+    "code": "def load_users(cur, ids):\n    users = []\n    for user_id in ids:\n        cur.execute(\"SELECT * FROM users WHERE id = ?\", (user_id,))\n        users.append(cur.fetchone())\n    return users\n",
+    "expect": {
+      "issue_lines": [
+        4
+      ],
+      "issue_category": "performance",
+      "reason_keywords": [
+        "loop",
+        "query",
+        "batch",
+        "in (",
+        "n+1",
+        "round trip",
+        "single"
+      ]
+    }
+  },
+  {
+    "id": "bp-assert-for-auth",
+    "language": "python",
+    "tags": [
+      "bad-practice"
+    ],
+    "code": "def delete_account(user, account):\n    assert user.is_admin\n    account.delete()\n",
+    "expect": {
+      "issue_lines": [
+        2
+      ],
+      "issue_category": "security",
+      "reason_keywords": [
+        "assert",
+        "-o",
+        "optimi",
+        "disabled",
+        "stripped"
+      ]
+    }
+  },
+  {
+    "id": "bp-kitchen-sink",
+    "language": "python",
+    "tags": [
+      "bad-practice"
+    ],
+    "code": "import os\nimport pickle\n\nSECRET_KEY = \"abc123xyz\"\n\ndef handle(request, db):\n    data = pickle.loads(request.body)\n    db.execute(\"DELETE FROM sessions WHERE user = '\" + data[\"user\"] + \"'\")\n    os.system(\"echo \" + data[\"user\"])\n    return True\n",
+    "expect": {
+      "min_issues": 3,
+      "issue_lines": [
+        4,
+        7,
+        8,
+        9
+      ],
+      "issue_category": "security"
+    },
+    "rules": {
+      "min_issues": 4,
+      "issue_category": "security"
+    }
+  },
+  {
+    "id": "bp-js-innerhtml-xss",
+    "language": "javascript",
+    "tags": [
+      "bad-practice"
+    ],
+    "code": "function showComment(container, comment) {\n  container.innerHTML = \"<p>\" + comment + \"</p>\";\n}\n",
+    "expect": {
+      "issue_lines": [
+        2
+      ],
+      "issue_category": "security",
+      "reason_keywords": [
+        "xss",
+        "innerhtml",
+        "textcontent",
+        "sanitiz",
+        "escape",
+        "inject"
+      ]
+    }
+  },
+  {
+    "id": "bp-js-eval",
+    "language": "javascript",
+    "tags": [
+      "bad-practice"
+    ],
+    "code": "function run(code) {\n  return eval(code);\n}\n",
+    "expect": {
+      "issue_lines": [
+        2
+      ],
+      "issue_category": "security",
+      "reason_keywords": [
+        "eval",
+        "arbitrary",
+        "inject",
+        "execute"
+      ]
+    }
+  },
+  {
+    "id": "bp-js-var-and-loose-equality",
+    "language": "javascript",
+    "tags": [
+      "bad-practice"
+    ],
+    "code": "function count(items, target) {\n  var total = 0;\n  for (var i = 0; i < items.length; i++) {\n    if (items[i] == target) {\n      total++;\n    }\n  }\n  return total;\n}\n",
+    "expect": {
+      "max_issues": 3,
+      "no_errors": true,
+      "time": "O(n)"
+    }
+  },
+  {
+    "id": "bp-go-ignored-error",
+    "language": "go",
+    "tags": [
+      "bad-practice"
+    ],
+    "code": "package main\n\nimport \"os\"\n\nfunc readFirst(path string) []byte {\n\tf, _ := os.Open(path)\n\tbuf := make([]byte, 10)\n\tf.Read(buf)\n\treturn buf\n}\n",
+    "expect": {
+      "issue_lines": [
+        6,
+        7,
+        8,
+        9
+      ],
+      "reason_keywords": [
+        "error",
+        "ignor",
+        "nil",
+        "check",
+        "close",
+        "defer"
+      ]
+    }
+  },
+  {
+    "id": "bp-java-string-equality",
+    "language": "java",
+    "tags": [
+      "bad-practice"
+    ],
+    "code": "public class Auth {\n    public boolean isAdmin(String role) {\n        return role == \"admin\";\n    }\n}\n",
+    "expect": {
+      "issue_lines": [
+        3
+      ],
+      "issue_category": "bug",
+      "reason_keywords": [
+        "equals",
+        "reference",
+        "==",
+        "intern"
+      ]
+    }
+  }
+]

@@ -1,0 +1,72 @@
+# Runs the whole app:   docker compose up --build        then open http://localhost:8080
+# With the AI model:    docker compose --profile model up --build   (and set REVIEWER=llm in .env)
+# Settings come from a .env file next to this one (copy .env.example).
+name: code-snippet-analyzer
+
+services:
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    environment:
+      REVIEWER: ${REVIEWER:-stub}
+      LLM_BASE_URL: http://ollama:11434/v1
+      LLM_MODEL: ${LLM_MODEL:-qwen2.5-coder:7b}
+      LLM_TIMEOUT_SECONDS: ${LLM_TIMEOUT_SECONDS:-600}
+      LLM_MAX_CONCURRENCY: ${LLM_MAX_CONCURRENCY:-1}
+      LLM_MAX_CODE_CHARS: ${LLM_MAX_CODE_CHARS:-20000}
+    volumes:
+      - app-data:/data
+    # No published port: the website below is the only way in, and the API has no login yet.
+
+  web:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      # Bound to this computer only. Change WEB_BIND to 0.0.0.0 only once the API is protected.
+      - "${WEB_BIND:-127.0.0.1}:${WEB_PORT:-8080}:80"
+
+  # ---- the AI model (only with --profile model) ----
+  ollama:
+    profiles: [model]
+    image: ollama/ollama:latest
+    restart: unless-stopped
+    environment:
+      # Without a larger window, Ollama silently cuts long snippets off.
+      OLLAMA_CONTEXT_LENGTH: ${OLLAMA_CONTEXT_LENGTH:-16384}
+    volumes:
+      - ollama-data:/root/.ollama
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    # NVIDIA GPU: install the NVIDIA Container Toolkit (Docker Desktop on Windows needs only
+    # current drivers and WSL 2), then remove the # from these lines.
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: all
+    #           capabilities: [gpu]
+
+  # Downloads the model once (about 5 GB for the 7B size), then exits.
+  model-pull:
+    profiles: [model]
+    image: ollama/ollama:latest
+    depends_on:
+      ollama:
+        condition: service_healthy
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+    entrypoint: ["ollama", "pull", "${LLM_MODEL:-qwen2.5-coder:7b}"]
+    restart: "no"
+
+volumes:
+  app-data:
+  ollama-data:

@@ -13,7 +13,18 @@ router = APIRouter(tags=["health"])
 @router.get("/health")
 async def health(reviewer: ReviewerDep) -> dict[str, Any]:
     """Liveness: the process is up. Does not touch the database."""
-    return {"status": "ok", "version": __version__, "reviewer": reviewer.name}
+    return {
+        "status": "ok",
+        "version": __version__,
+        "reviewer": reviewer.name,
+        "model": reviewer.model_name,
+    }
+
+
+@router.get("/reviewer/status")
+async def reviewer_status(reviewer: ReviewerDep) -> dict[str, Any]:
+    """Whether the reviewer can work right now, e.g. the model server is up and has the model."""
+    return await reviewer.check()
 
 
 @router.get("/ready")

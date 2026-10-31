@@ -2,12 +2,15 @@ import type { ReviewResult, ReviewStage } from "@/types/review";
 import type { ReplyStyle } from "@/types/settings";
 
 export type ReviewRequest = { code: string; language: string };
-export type AskRequest = { question: string; replyStyle: ReplyStyle };
+
+/** A finished review and the id it was saved under (needed to chat about it). */
+export type ReviewResponse = { id: string; result: ReviewResult };
+
+export type AskRequest = { reviewId: string; question: string; replyStyle: ReplyStyle };
 
 /**
  * The only surface the UI uses to talk to a backend.
- * A mock implements it today; an HTTP client will implement it once the API is connected,
- * so no component or hook has to change.
+ * `createHttpApi` talks to the real server; `createMockApi` is for working on the UI alone.
  */
 export interface ReviewApi {
   /** `onProgress` is called as each step of the review begins. */
@@ -15,7 +18,7 @@ export interface ReviewApi {
     request: ReviewRequest,
     signal?: AbortSignal,
     onProgress?: (stage: ReviewStage) => void,
-  ): Promise<ReviewResult>;
+  ): Promise<ReviewResponse>;
   ask(request: AskRequest, signal?: AbortSignal): Promise<string>;
 }
 

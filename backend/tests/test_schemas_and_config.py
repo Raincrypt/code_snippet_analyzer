@@ -146,3 +146,14 @@ def test_cors_origins_are_split_and_trimmed() -> None:
 
 def test_docs_are_off_in_production() -> None:
     assert Settings(environment="production").docs_enabled is False
+
+
+def test_llm_reviewer_is_built_from_settings() -> None:
+    from app.services.llm_reviewer import LlmReviewer
+    from app.services.reviewer import build_reviewer
+
+    settings = Settings(reviewer="llm", llm_model="qwen2.5-coder:14b", llm_max_code_chars=3000)
+    reviewer = build_reviewer(settings)
+    assert isinstance(reviewer, LlmReviewer) and reviewer.model_name == "qwen2.5-coder:14b"
+    assert settings.code_limit == 3000
+    assert Settings(reviewer="stub").code_limit == Settings().max_code_chars

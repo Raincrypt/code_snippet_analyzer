@@ -10,6 +10,8 @@ export function useReview(api: ReviewApi) {
   const [state, setState] = useState<ReviewState>({ status: "idle" });
   // The exact code the current result belongs to; null unless a review has succeeded.
   const [reviewedCode, setReviewedCode] = useState<string | null>(null);
+  // The id the backend saved the current result under; needed to chat about it.
+  const [reviewId, setReviewId] = useState<string | null>(null);
   const controllerRef = useRef<AbortController | null>(null);
 
   // Cancel any in-flight request when the component unmounts.
@@ -21,13 +23,15 @@ export function useReview(api: ReviewApi) {
       const controller = new AbortController();
       controllerRef.current = controller;
       setReviewedCode(null);
+      setReviewId(null);
       setState({ status: "loading", stage: null });
       try {
-        const result = await api.review(request, controller.signal, (stage) => {
+        const { id, result } = await api.review(request, controller.signal, (stage) => {
           if (!controller.signal.aborted) setState({ status: "loading", stage });
         });
         if (!controller.signal.aborted) {
           setReviewedCode(request.code);
+          setReviewId(id);
           setState({ status: "success", result });
         }
       } catch (error) {
@@ -37,5 +41,5 @@ export function useReview(api: ReviewApi) {
     [api],
   );
 
-  return { state, run, reviewedCode };
+  return { state, run, reviewedCode, reviewId };
 }

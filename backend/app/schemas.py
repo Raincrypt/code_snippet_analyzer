@@ -21,6 +21,15 @@ ReplyStyle = Literal["brief", "balanced", "detailed"]
 Role = Literal["user", "assistant"]
 Confidence = Literal["high", "medium", "low"]
 Effort = Literal["quick", "moderate", "larger"]
+# The steps of a review, in order. The frontend shows them as progress while a review runs.
+ReviewStage = Literal["prepare", "understand", "analyse", "complexity", "verify"]
+REVIEW_STAGES: tuple[ReviewStage, ...] = (
+    "prepare",
+    "understand",
+    "analyse",
+    "complexity",
+    "verify",
+)
 # "not-assessed" is used by the placeholder reviewer, which does not look at the code.
 Verdict = Literal["fix-before-use", "needs-work", "mostly-fine", "looks-good", "not-assessed"]
 

@@ -1,9 +1,8 @@
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { EditorView } from "@codemirror/view";
-import type { ReviewApi } from "@/api/types";
+import type { ReviewApi, ReviewResponse } from "@/api/types";
 import { MOCK_REVIEW, SAMPLE_CODE } from "@/mocks/review";
-import type { ReviewResult } from "@/types/review";
 import App from "./App";
 
 function deferred<T>() {
@@ -13,7 +12,7 @@ function deferred<T>() {
 }
 
 function setup() {
-  const pending = deferred<ReviewResult>();
+  const pending = deferred<ReviewResponse>();
   const api: ReviewApi = {
     review: vi.fn(() => pending.promise),
     ask: vi.fn(() => Promise.resolve("A reply")),
@@ -70,7 +69,7 @@ describe("review and chat flow", () => {
     await userEvent.click(reviewButton());
     expect(sendButton()).toBeDisabled();
 
-    await act(async () => pending.resolve(MOCK_REVIEW));
+    await act(async () => pending.resolve({ id: "r1", result: MOCK_REVIEW }));
 
     await waitFor(() => expect(sendButton()).toBeEnabled());
     expect(reviewButton()).toBeEnabled();
@@ -79,7 +78,7 @@ describe("review and chat flow", () => {
   it("disables sending when the reviewed code is edited and restores it when reverted", async () => {
     const { pending, reviewButton, sendButton, typeQuestion } = setup();
     await userEvent.click(reviewButton());
-    await act(async () => pending.resolve(MOCK_REVIEW));
+    await act(async () => pending.resolve({ id: "r1", result: MOCK_REVIEW }));
     await typeQuestion();
     await waitFor(() => expect(sendButton()).toBeEnabled());
 
@@ -94,13 +93,13 @@ describe("review and chat flow", () => {
   it("sends the question once chat is open", async () => {
     const { api, pending, reviewButton, sendButton, typeQuestion } = setup();
     await userEvent.click(reviewButton());
-    await act(async () => pending.resolve(MOCK_REVIEW));
+    await act(async () => pending.resolve({ id: "r1", result: MOCK_REVIEW }));
     await typeQuestion();
 
     await userEvent.click(sendButton());
 
     expect(api.ask).toHaveBeenCalledWith(
-      { question: "Why?", replyStyle: "brief" },
+      { reviewId: "r1", question: "Why?", replyStyle: "brief" },
       expect.any(AbortSignal),
     );
     expect(await screen.findByText("A reply")).toBeInTheDocument();
@@ -114,7 +113,7 @@ describe("review and chat flow", () => {
   it("marks flagged lines after a review, and hides the marks once the code is edited", async () => {
     const { pending, reviewButton } = setup();
     await userEvent.click(reviewButton());
-    await act(async () => pending.resolve(MOCK_REVIEW));
+    await act(async () => pending.resolve({ id: "r1", result: MOCK_REVIEW }));
     await waitFor(() => expect(realDots().length).toBeGreaterThan(0));
     expect(screen.queryByText("Out of date")).not.toBeInTheDocument();
 

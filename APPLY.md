@@ -1,19 +1,18 @@
-# Phase A1 changes: how to apply
+# Update: rules + test cases (Phase C-1 and C-2) and the model status dot
 
-This zip contains only the files that are new or changed since your last full zip. Paths are relative
-to the repository root.
+Unzip over the project root and choose "replace" for existing files.
 
-1. Unzip it **at the repository root**, overwriting files when asked.
-2. Delete these three files, which the new review panel replaces:
-   - `frontend/src/features/review/AnnotationCard.tsx`
-   - `frontend/src/features/review/AnnotationCard.test.tsx`
-   - `frontend/src/features/review/ResultsPanel.tsx`
-3. Delete your local database, because the saved review format changed: `rm backend/app.db`
-4. No new packages are needed (no `npm install` or `pip install`).
-5. Check everything (with the Python virtual environment active):
-   `npm run format:check && npm run lint && npm run typecheck && npm test && npm run build`
-6. You can delete this `APPLY.md` afterwards.
+1. DELETE the old prompt file (a zip cannot delete): `backend\app\prompts\review_v1.py`
+   (or run `delete-old-files.bat` from the project root).
+2. Backend check:  cd backend  then  .venv\Scripts\python.exe -m pytest -q
+3. Docker:  docker compose down  then  docker compose up -d --build
+   Without Docker: restart start-all.bat.
 
-Also included, because they were not in your last zip:
-- the history removal (frontend History button; backend list and delete endpoints)
-- the editor height fix (`flex-1` on the editor section in `CodeEditor.tsx`)
+Includes the httpx fix (backend\pyproject.toml now lists httpx as a normal dependency).
+
+## What is in it
+- C-1: rule-based checks + algorithm catalogue + review_v2 prompt + stricter scoring
+- C-2: 48 extra eval cases (tags complex-algorithm / bad-practice), 19 more rules, 9 more detectors
+- Model status dot (green / yellow / red) in the footer
+Quality run (optional, ~1 min per case on CPU):
+  .venv\Scripts\python.exe -m evals.run_evals --tag bad-practice --json bad.json

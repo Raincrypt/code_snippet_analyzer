@@ -1,4 +1,6 @@
 import { useMemo, useRef, useState, type CSSProperties } from "react";
+import { USE_MOCK_API } from "@/api/config";
+import { createHttpApi } from "@/api/httpApi";
 import { createMockApi, type MockOutcome } from "@/api/mockApi";
 import type { ReviewApi } from "@/api/types";
 import { Header } from "@/components/Header";
@@ -7,7 +9,9 @@ import { StatusBar } from "@/components/StatusBar";
 import { ChatPanel } from "@/features/chat/ChatPanel";
 import { CodeEditor, type CodeEditorHandle, type EditorIssue } from "@/features/review/CodeEditor";
 import { ResultsSection } from "@/features/review/ResultsSection";
+import { useBackendLabel } from "@/hooks/useBackendLabel";
 import { useChat } from "@/hooks/useChat";
+import { useModelStatus } from "@/hooks/useModelStatus";
 import { usePersistentNumber } from "@/hooks/usePersistentNumber";
 import { useReview } from "@/hooks/useReview";
 import { useSettings } from "@/hooks/useSettings";
@@ -27,7 +31,7 @@ const HANDLE_SIZE = 6;
 const NO_ISSUES: EditorIssue[] = [];
 
 type AppProps = {
-  /** Lets tests supply a controllable API. In the app it defaults to the mock. */
+  /** Lets tests supply a controllable API. In the app it defaults to the real backend. */
   api?: ReviewApi;
 };
 
@@ -53,11 +57,20 @@ export default function App({ api: injectedApi }: AppProps = {}) {
   // The finding currently selected (from a card or from the editor gutter).
   const [activeKey, setActiveKey] = useState<string | null>(null);
 
-  // Swap createMockApi for an HTTP client once the backend exists; nothing else changes.
+  // The real backend by default; the mock (VITE_USE_MOCK_API=true) lets the interface be built
+  // without it. Tests pass their own `api`.
+  const httpApi = useMemo(() => createHttpApi(), []);
   const mockApi = useMemo(() => createMockApi({ outcome }), [outcome]);
-  const api = injectedApi ?? mockApi;
+  const api = injectedApi ?? (USE_MOCK_API ? mockApi : httpApi);
+  const usingMock = injectedApi === undefined && USE_MOCK_API;
+  const backendLabel = useBackendLabel(
+    injectedApi === undefined && !USE_MOCK_API ? httpApi.health : null,
+  );
+  const modelStatus = useModelStatus(
+    injectedApi === undefined && !USE_MOCK_API ? httpApi.modelStatus : null,
+  );
   const review = useReview(api);
-  const chat = useChat(api, settings.replyStyle);
+  const chat = useChat(api, settings.replyStyle, review.reviewId);
 
   function runReview() {
     // Also guards the Ctrl/Cmd+Enter shortcut and "Try again", not just the disabled button.
@@ -192,7 +205,12 @@ export default function App({ api: injectedApi }: AppProps = {}) {
           />
         </div>
       </main>
-      <StatusBar status={review.state.status} outcome={outcome} onOutcomeChange={setOutcome} />
+      <StatusBar
+        status={review.state.status}
+        reviewerLabel={usingMock ? "Reviewer: mock data" : backendLabel}
+        modelStatus={modelStatus}
+        mock={usingMock ? { outcome, onOutcomeChange: setOutcome } : undefined}
+      />
     </div>
   );
 }

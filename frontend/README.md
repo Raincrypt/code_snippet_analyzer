@@ -4,7 +4,7 @@ React 19, TypeScript, Vite, Tailwind CSS v4. Run from the repo root with `npm ru
 
 ```
 src/
-├── api/          ReviewApi interface + mock implementation
+├── api/          ReviewApi interface, HTTP client (SSE) and mock implementation
 ├── components/   Shared UI (ui/ = primitives) and app chrome
 ├── features/     review/ (editor, results bar, panel/) and chat/
 ├── hooks/        useReview, useChat (state + async + cancellation), usePersistentNumber
@@ -14,6 +14,7 @@ src/
 └── index.css     Design tokens (colors, fonts, animation)
 ```
 
+By default the app talks to the backend through the `/api` proxy. Set `VITE_USE_MOCK_API=true` (in `frontend/.env`) to use mock data instead; then the "Next mock review" selector appears.
 Use the "Next mock review" selector in the status bar to preview the issues, no-issues and error states.
 
 ## Layout

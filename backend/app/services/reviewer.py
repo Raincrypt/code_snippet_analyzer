@@ -10,17 +10,28 @@ To add a real model later:
 Nothing else in the API, database or tests has to change.
 """
 
+import asyncio
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
-from typing import Protocol
+from typing import Any, Protocol
 
 from app.config import Settings
-from app.schemas import Language, ReplyStyle, ReviewResult, Role
+from app.schemas import REVIEW_STAGES, Language, ReplyStyle, ReviewResult, ReviewStage, Role
 from app.services.demo import demo_review_for
 from app.services.metrics import measure
 
+# Called as each step of a review begins, so the UI can show progress.
+ProgressCallback = Callable[[ReviewStage], Awaitable[None]]
+
 
 class ReviewerError(Exception):
-    """Raise from a Reviewer when the review or answer cannot be produced (the API returns 502)."""
+    """Raise from a Reviewer when the review or answer cannot be produced (the API returns 502).
+
+    `public_message` is what the user is told. The exception's own text is only for the logs,
+    because it may contain internal details.
+    """
+
+    public_message = "The reviewer could not complete the review."
 
 
 @dataclass(frozen=True)
@@ -62,7 +73,17 @@ class AnswerOutcome:
 class Reviewer(Protocol):
     name: str
 
-    async def review(self, code: str, language: Language) -> ReviewOutcome: ...
+    # The model behind the reviewer, if any (shown in the UI). None for the placeholder.
+    @property
+    def model_name(self) -> str | None: ...
+
+    async def check(self) -> dict[str, Any]:
+        """Whether the reviewer can work right now (for the status endpoint)."""
+        ...
+
+    async def review(
+        self, code: str, language: Language, progress: ProgressCallback | None = None
+    ) -> ReviewOutcome: ...
 
     async def answer(self, request: AnswerRequest) -> AnswerOutcome: ...
 
@@ -75,8 +96,28 @@ class StubReviewer:
     """
 
     name = "stub"
+    model_name: str | None = None
 
-    async def review(self, code: str, language: Language) -> ReviewOutcome:
+    async def check(self) -> dict[str, Any]:
+        return {
+            "ready": True,
+            "state": "ready",
+            "model": None,
+            "detail": "Placeholder reviewer; no model needed.",
+        }
+
+    def __init__(self, step_delay_seconds: float = 0.0) -> None:
+        self.step_delay_seconds = step_delay_seconds
+
+    async def review(
+        self, code: str, language: Language, progress: ProgressCallback | None = None
+    ) -> ReviewOutcome:
+        # Reports every step so the streaming path works end to end; nothing real happens in them.
+        for stage in REVIEW_STAGES:
+            if progress is not None:
+                await progress(stage)
+            if self.step_delay_seconds:
+                await asyncio.sleep(self.step_delay_seconds)
         demo = demo_review_for(code)
         if demo is not None:
             return ReviewOutcome(result=demo)
@@ -109,5 +150,9 @@ class StubReviewer:
 
 def build_reviewer(settings: Settings) -> Reviewer:
     if settings.reviewer == "stub":
-        return StubReviewer()
+        return StubReviewer(step_delay_seconds=settings.stub_step_delay_seconds)
+    if settings.reviewer == "llm":
+        from app.services.llm_reviewer import build_llm_reviewer  # imported here: it imports us
+
+        return build_llm_reviewer(settings)
     raise ValueError(f"Unknown reviewer: {settings.reviewer}")  # pragma: no cover

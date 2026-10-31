@@ -7,7 +7,7 @@ const request = { code: "x = 1", language: "python" };
 
 function fakeApi(overrides: Partial<ReviewApi> = {}): ReviewApi {
   return {
-    review: () => Promise.resolve(MOCK_REVIEW),
+    review: () => Promise.resolve({ id: "r1", result: MOCK_REVIEW }),
     ask: () => Promise.resolve("ok"),
     ...overrides,
   };
@@ -69,7 +69,7 @@ describe("useReview", () => {
         new Promise((resolve) => {
           onProgress?.("prepare");
           onProgress?.("analyse");
-          finish = () => resolve(MOCK_REVIEW);
+          finish = () => resolve({ id: "r1", result: MOCK_REVIEW });
         }),
     });
     const { result } = renderHook(() => useReview(api));
@@ -79,5 +79,22 @@ describe("useReview", () => {
     );
     await act(async () => finish());
     expect(result.current.state.status).toBe("success");
+  });
+
+  it("remembers the id the review was saved under", async () => {
+    const { result } = renderHook(() => useReview(fakeApi()));
+    expect(result.current.reviewId).toBeNull();
+    await act(() => result.current.run(request));
+    expect(result.current.reviewId).toBe("r1");
+  });
+
+  it("has no review id while a review runs or after one fails", async () => {
+    const { result } = renderHook(() => useReview(fakeApi()));
+    await act(() => result.current.run(request));
+    const failing = renderHook(() =>
+      useReview(fakeApi({ review: () => Promise.reject(new Error("boom")) })),
+    );
+    await act(() => failing.result.current.run(request));
+    expect(failing.result.current.reviewId).toBeNull();
   });
 });

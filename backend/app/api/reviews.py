@@ -1,10 +1,12 @@
 import time
 import uuid
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
+from fastapi.responses import StreamingResponse
 
 from app import repository
 from app.api.deps import ReviewerDep, SessionDep, SettingsDep
+from app.config import Settings
 from app.errors import NotFoundError, PayloadTooLargeError, ReviewerFailedError
 from app.models import Review
 from app.schemas import (
@@ -15,26 +17,10 @@ from app.schemas import (
     ReviewDetail,
     ReviewResult,
 )
+from app.services.review_stream import stream_review, to_detail
 from app.services.reviewer import AnswerRequest, ChatTurn, ReviewerError
 
 router = APIRouter(prefix="/reviews", tags=["reviews"])
-
-
-def to_detail(review: Review) -> ReviewDetail:
-    return ReviewDetail(
-        id=review.id,
-        language=review.language,
-        code=review.code,
-        result=ReviewResult.model_validate(review.result),
-        reviewer=review.reviewer,
-        model=review.model,
-        prompt_version=review.prompt_version,
-        tokens_in=review.tokens_in,
-        tokens_out=review.tokens_out,
-        latency_ms=review.latency_ms,
-        created_at=review.created_at,
-        messages=[MessageOut.model_validate(m) for m in review.messages],
-    )
 
 
 async def get_or_404(session: SessionDep, review_id: uuid.UUID) -> Review:
@@ -44,21 +30,48 @@ async def get_or_404(session: SessionDep, review_id: uuid.UUID) -> Review:
     return review
 
 
+def check_code_size(code: str, settings: Settings) -> None:
+    limit = settings.code_limit
+    if len(code) > limit:
+        raise PayloadTooLargeError(f"Code is too long (maximum {limit} characters).")
+
+
+@router.post("/stream")
+async def create_review_stream(
+    body: ReviewCreate, request: Request, reviewer: ReviewerDep, settings: SettingsDep
+) -> StreamingResponse:
+    """Review a snippet, reporting each step as it happens (Server-Sent Events).
+
+    Problems with the request itself (blank code, too long) are ordinary error responses.
+    Problems during the review arrive as an `error` event, because the response has started.
+    """
+    check_code_size(body.code, settings)
+    events = stream_review(
+        reviewer,
+        request.app.state.session_factory,
+        body,
+        getattr(request.state, "request_id", None),
+    )
+    return StreamingResponse(
+        events,
+        media_type="text/event-stream",
+        # no-cache and X-Accel-Buffering stop browsers and proxies (nginx) from holding events back.
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
+
+
 @router.post("", response_model=ReviewDetail, status_code=201)
 async def create_review(
     body: ReviewCreate, session: SessionDep, reviewer: ReviewerDep, settings: SettingsDep
 ) -> ReviewDetail:
-    """Review a snippet and save the result."""
-    if len(body.code) > settings.max_code_chars:
-        raise PayloadTooLargeError(
-            f"Code is too long (maximum {settings.max_code_chars} characters)."
-        )
+    """Review a snippet and save the result, without progress reporting."""
+    check_code_size(body.code, settings)
 
     started = time.perf_counter()
     try:
         outcome = await reviewer.review(body.code, body.language)
     except ReviewerError as exc:
-        raise ReviewerFailedError("The reviewer could not complete the review.") from exc
+        raise ReviewerFailedError(exc.public_message) from exc
     latency_ms = round((time.perf_counter() - started) * 1000)
 
     review = await repository.create_review(session, body, reviewer.name, outcome, latency_ms)
@@ -96,7 +109,12 @@ async def ask_question(
     try:
         outcome = await reviewer.answer(request)
     except ReviewerError as exc:
-        raise ReviewerFailedError("The reviewer could not answer.") from exc
+        message = (
+            exc.public_message
+            if type(exc) is not ReviewerError
+            else "The reviewer could not answer."
+        )
+        raise ReviewerFailedError(message) from exc
 
     user, assistant = await repository.add_exchange(session, review, body, outcome)
     return MessageExchange(
